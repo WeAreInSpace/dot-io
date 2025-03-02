@@ -122,6 +122,9 @@ func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc fun
 		Authentication:  clientConnectionHeader.Authentication,
 		ClientPublicKey: clientConnectionHeader.PublicKey,
 		Conn:            conn,
+
+		Ipk: ipk,
+		Opk: opk,
 	}
 	clientUuid, err := mgr.Add(connData)
 	if err != nil {

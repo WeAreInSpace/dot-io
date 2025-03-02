@@ -27,8 +27,57 @@ func NewOutPacket(conn *net.TCPConn) *OutPacket {
 	}
 }
 
+type PacketWriter interface {
+	Write(data []byte) error
+	WriteStream(data io.Reader) error
+
+	WriteInt32(data int32) error
+	WriteInt64(data int64) error
+	WriteString(data string) error
+	WriteStreamString(len int64, data io.Reader) error
+	WriteJson(data any) error
+	WriteBytes(data []byte) error
+	WriteStreamBytes(len int64, data io.Reader) error
+}
+
 type OutPacket struct {
 	conn *net.TCPConn
+}
+
+func (opk *OutPacket) Write(data []byte) error {
+	_, err := opk.conn.Write(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (opk *OutPacket) WriteStream(data io.Reader) error {
+	_, err := io.Copy(opk.conn, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (opk *OutPacket) WriteInt32(data int32) error {
+	err := opk.WriteStream(ToInt32(data))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (opk *OutPacket) WriteInt64(data int64) error {
+	err := opk.WriteStream(ToInt64(data))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (opk *OutPacket) WriteString(data string) error {
@@ -39,7 +88,7 @@ func (opk *OutPacket) WriteString(data string) error {
 		return err
 	}
 
-	err = opk.WriteBytes([]byte(data))
+	err = opk.Write([]byte(data))
 	if err != nil {
 		return err
 	}
@@ -53,34 +102,7 @@ func (opk *OutPacket) WriteStreamString(len int64, data io.Reader) error {
 		return err
 	}
 
-	_, err = io.Copy(opk.conn, data)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (opk *OutPacket) WriteInt32(data int32) error {
-	_, err := io.Copy(opk.conn, ToInt32(data))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (opk *OutPacket) WriteInt64(data int64) error {
-	_, err := io.Copy(opk.conn, ToInt64(data))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (opk *OutPacket) WriteBytes(data []byte) error {
-	_, err := opk.conn.Write(data)
+	err = opk.WriteStream(data)
 	if err != nil {
 		return err
 	}
@@ -95,6 +117,34 @@ func (opk *OutPacket) WriteJson(data any) error {
 	jsonEncoder.Encode(data)
 
 	err := opk.WriteStreamString(int64(jsonBuffer.Len()), jsonBuffer)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (opk *OutPacket) WriteBytes(data []byte) error {
+	err := opk.WriteInt64(int64(len(data)))
+	if err != nil {
+		return err
+	}
+
+	err = opk.Write(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (opk *OutPacket) WriteStreamBytes(len int64, data io.Reader) error {
+	err := opk.WriteInt64(len)
+	if err != nil {
+		return err
+	}
+
+	err = opk.WriteStream(data)
 	if err != nil {
 		return err
 	}
