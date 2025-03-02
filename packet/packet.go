@@ -99,7 +99,12 @@ func validateFeildParams(action string, feildType string, feildName string, feil
 
 	feildData.Action = action
 	feildData.Type = feildType
-	feildData.Descriptions = feildDesc
+
+	if feildDesc == nil {
+		feildData.Descriptions = []string{}
+	} else {
+		feildData.Descriptions = feildDesc
+	}
 
 	return feildData
 }
