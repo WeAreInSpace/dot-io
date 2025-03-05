@@ -6,64 +6,64 @@ import (
 	"github.com/WeAreInSpace/mlish"
 )
 
-type FeildGroupData struct {
-	Name      string
-	FeildData *mlish.Model[FeildData]
+type FeildkitGroupData struct {
+	Name         string
+	FeildkitData *mlish.Model[FeildkitData]
 }
 
-type FeildData struct {
+type FeildkitData struct {
 	Type         string
 	Name         string
 	Descriptions []string
 	Action       string //write, read
 }
 
-func NewFieldManager() *FieldManager {
-	fields := mlish.NewModel[FeildGroupData]()
-	return &FieldManager{
+func NewFieldkitManager() *FieldkitManager {
+	fields := mlish.NewModel[FeildkitGroupData]()
+	return &FieldkitManager{
 		Feilds: fields,
 	}
 }
 
-type FieldManager struct {
-	Feilds *mlish.Model[FeildGroupData]
+type FieldkitManager struct {
+	Feilds *mlish.Model[FeildkitGroupData]
 }
 
-func (fmgr *FieldManager) New(fieldGroupName string) *FeildGroup {
-	feildModel := mlish.NewModel[FeildData]()
-	feild := &FeildGroup{
+func (fmgr *FieldkitManager) New(fieldGroupName string) *FeildkitGroup {
+	feildModel := mlish.NewModel[FeildkitData]()
+	feild := &FeildkitGroup{
 		feildModel: feildModel,
 	}
 
 	fmgr.Feilds.Add(
-		&FeildGroupData{Name: fieldGroupName, FeildData: feildModel},
+		&FeildkitGroupData{Name: fieldGroupName, FeildkitData: feildModel},
 	)
 
 	return feild
 }
 
-type FeildGroupSchema struct {
-	Name   string        `json:"name"`
-	Feilds []FeildSchema `json:"feilds"`
+type FeildkitGroupSchema struct {
+	Name   string           `json:"name"`
+	Feilds []FeildkitSchema `json:"feilds"`
 }
 
-type FeildSchema struct {
+type FeildkitSchema struct {
 	Type         string   `json:"type"`
 	Name         string   `json:"name"`
 	Descriptions []string `json:"descriptions"`
 	Action       string   `json:"action"` //write, read
 }
 
-func (fmgr *FieldManager) Export() []FeildGroupSchema {
-	var feildGroups []FeildGroupSchema
+func (fmgr *FieldkitManager) Export() []FeildkitGroupSchema {
+	var feildGroups []FeildkitGroupSchema
 
 	fmgr.Feilds.For(
-		func(item *mlish.ForParams[FeildGroupData]) {
-			var feilds []FeildSchema
+		func(item *mlish.ForParams[FeildkitGroupData]) {
+			var feilds []FeildkitSchema
 
-			item.DataAddr().FeildData.For(
-				func(item *mlish.ForParams[FeildData]) {
-					feild := FeildSchema{
+			item.DataAddr().FeildkitData.For(
+				func(item *mlish.ForParams[FeildkitData]) {
+					feild := FeildkitSchema{
 						Type:         item.DataAddr().Type,
 						Name:         item.DataAddr().Name,
 						Descriptions: item.DataAddr().Descriptions,
@@ -73,7 +73,7 @@ func (fmgr *FieldManager) Export() []FeildGroupSchema {
 				},
 			)
 
-			feildGroup := &FeildGroupSchema{
+			feildGroup := &FeildkitGroupSchema{
 				Name:   item.DataAddr().Name,
 				Feilds: feilds,
 			}
@@ -85,12 +85,12 @@ func (fmgr *FieldManager) Export() []FeildGroupSchema {
 	return feildGroups
 }
 
-type FeildGroup struct {
-	feildModel *mlish.Model[FeildData]
+type FeildkitGroup struct {
+	feildModel *mlish.Model[FeildkitData]
 }
 
-func validateFeildParams(action string, feildType string, feildName string, feildDesc []string) *FeildData {
-	feildData := &FeildData{}
+func validateFeildkitParams(action string, feildType string, feildName string, feildDesc []string) *FeildkitData {
+	feildData := &FeildkitData{}
 	if feildName == "" {
 		feildData.Name = "feild"
 	} else {
@@ -111,74 +111,74 @@ func validateFeildParams(action string, feildType string, feildName string, feil
 
 //Write
 
-func (f *FeildGroup) WriteInt32(data int32, feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("write", "integer-32bit", feildName, feildDesc)
+func (f *FeildkitGroup) WriteInt32(data int32, feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("write", "integer-32bit", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) WriteInt64(data int64, feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("write", "integer-64bit", feildName, feildDesc)
+func (f *FeildkitGroup) WriteInt64(data int64, feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("write", "integer-64bit", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) WriteString(data string, feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("write", "string", feildName, feildDesc)
+func (f *FeildkitGroup) WriteString(data string, feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("write", "string", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) WriteStreamString(len int64, data io.Reader, feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("write", "string", feildName, feildDesc)
+func (f *FeildkitGroup) WriteStreamString(len int64, data io.Reader, feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("write", "string", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) WriteJson(data any, feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("write", "json-string", feildName, feildDesc)
+func (f *FeildkitGroup) WriteJson(data any, feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("write", "json-string", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) WriteBytes(data []byte, feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("write", "byte-array", feildName, feildDesc)
+func (f *FeildkitGroup) WriteBytes(data []byte, feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("write", "byte-array", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) WriteStreamBytes(len int64, data io.Reader, feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("write", "byte-array", feildName, feildDesc)
+func (f *FeildkitGroup) WriteStreamBytes(len int64, data io.Reader, feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("write", "byte-array", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 //Read
 
-func (f *FeildGroup) ReadInt32(feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("read", "integer-32bit", feildName, feildDesc)
+func (f *FeildkitGroup) ReadInt32(feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("read", "integer-32bit", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) ReadInt64(feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("read", "integer-64bit", feildName, feildDesc)
+func (f *FeildkitGroup) ReadInt64(feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("read", "integer-64bit", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) ReadString(feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("read", "string", feildName, feildDesc)
+func (f *FeildkitGroup) ReadString(feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("read", "string", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) ReadStreamString(feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("read", "string", feildName, feildDesc)
+func (f *FeildkitGroup) ReadStreamString(feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("read", "string", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) ReadJson(val any, feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("read", "json-string", feildName, feildDesc)
+func (f *FeildkitGroup) ReadJson(val any, feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("read", "json-string", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) ReadBytes(feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("read", "byte-array", feildName, feildDesc)
+func (f *FeildkitGroup) ReadBytes(feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("read", "byte-array", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildGroup) ReadStreamBytes(feildName string, feildDesc ...string) {
-	feildData := validateFeildParams("read", "byte-array", feildName, feildDesc)
+func (f *FeildkitGroup) ReadStreamBytes(feildName string, feildDesc ...string) {
+	feildData := validateFeildkitParams("read", "byte-array", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }

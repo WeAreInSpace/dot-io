@@ -14,8 +14,6 @@ package connection
 type ClientConnectionHeader struct {
 	ProtocolVersion int8                 `json:"proto_ver"` //1.0
 	Authentication  ClientAuthentication `json:"auth"`
-
-	PublicKey string `json:"pub_key"`
 }
 
 type ClientAuthentication struct {
@@ -35,10 +33,7 @@ type ClientAuthentication struct {
 */
 
 type ServerConnectionHeader struct {
-	ConnectionUUID      string `json:"uuid"`
-	ConnectionPublicKey string `json:"pub_key"`
-
-	PipeAddress string `json:"pipe_addr"`
+	ConnectionUUID string `json:"uuid"`
 }
 
 type Status struct {

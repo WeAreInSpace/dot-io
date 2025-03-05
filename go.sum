@@ -1,5 +1,7 @@
 github.com/WeAreInSpace/mlish v0.0.0-20250302130812-66d61ae744cd h1:+3eXbzzeLIbobWH2gLkNqwCF4Pw+vx397o0i+RxiJkU=
 github.com/WeAreInSpace/mlish v0.0.0-20250302130812-66d61ae744cd/go.mod h1:sLU5Jcq4HS59JMz3gdiTYzX7rW4M6+CR2d4kQHrPL5I=
+github.com/WeAreInSpace/mlish v0.0.0-20250303123258-0d4338b0ce8a h1:L9FTVVfVqs5w53NwTecNdxMfXEJVkk1nAINTmf3cxtQ=
+github.com/WeAreInSpace/mlish v0.0.0-20250303123258-0d4338b0ce8a/go.mod h1:sLU5Jcq4HS59JMz3gdiTYzX7rW4M6+CR2d4kQHrPL5I=
 github.com/bytedance/sonic v1.12.9 h1:Od1BvK55NnewtGaJsTDeAOSnLVO2BTSLOe0+ooKokmQ=
 github.com/bytedance/sonic v1.12.9/go.mod h1:uVvFidNmlt9+wa31S1urfwwthTWteBgG0hWuoKAXTx8=
 github.com/bytedance/sonic v1.12.10 h1:uVCQr6oS5669E9ZVW0HyksTLfNS7Q/9hV6IVS4nEMsI=

@@ -6,10 +6,16 @@ import (
 	"sync"
 
 	"github.com/WeAreInSpace/dot-io/packet"
+	"github.com/WeAreInSpace/dot-io/packet/in"
+	"github.com/WeAreInSpace/dot-io/packet/out"
 	"github.com/WeAreInSpace/dot-io/protocol/connection"
 )
 
-type ListenerConfig struct {
+/*
+ Server Side
+*/
+
+type ServerConfig struct {
 	Address string
 	Network string
 
@@ -19,7 +25,7 @@ type ListenerConfig struct {
 	TcpListener *net.TCPListener
 }
 
-func validateListenerConfig(conf *ListenerConfig) error {
+func validateServerConfig(conf *ServerConfig) error {
 	if conf.Address == "" {
 		conf.Address = "127.0.0.1"
 	}
@@ -52,11 +58,20 @@ func validateListenerConfig(conf *ListenerConfig) error {
 	return nil
 }
 
-func NewListener(conf *ListenerConfig) (*Listener, error) {
+type Listener struct {
+	Wg *sync.WaitGroup
+	Mx *sync.RWMutex
+
+	TcpListener *net.TCPListener
+	Connection  *connection.ConnectionManager
+	Feildkit    *packet.FieldkitManager
+}
+
+func NewListener(conf *ServerConfig) (*Listener, error) {
 	if conf == nil {
-		conf = &ListenerConfig{}
+		conf = &ServerConfig{}
 	}
-	err := validateListenerConfig(conf)
+	err := validateServerConfig(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -66,30 +81,21 @@ func NewListener(conf *ListenerConfig) (*Listener, error) {
 		return nil, err
 	}
 
-	feildManager := packet.NewFieldManager()
+	feildkitManager := packet.NewFieldkitManager()
 
 	listener := &Listener{
 		Wg: conf.Wg,
 		Mx: conf.Mx,
 
-		TcpListener:   conf.TcpListener,
-		ConnectionMgr: connectionMgr,
-		FeildMgr:      feildManager,
+		TcpListener: conf.TcpListener,
+		Connection:  connectionMgr,
+		Feildkit:    feildkitManager,
 	}
 
 	return listener, nil
 }
 
-type Listener struct {
-	Wg *sync.WaitGroup
-	Mx *sync.RWMutex
-
-	TcpListener   *net.TCPListener
-	ConnectionMgr *connection.ConnectionManager
-	FeildMgr      *packet.FieldManager
-}
-
-func (l *Listener) HandleConnection(cbOnConnect func(cdt *connection.ConnectionData)) {
+func (l *Listener) OnConnection(cbOnConnect func(cdt *connection.ConnectionData)) {
 	for {
 		conn, err := l.TcpListener.AcceptTCP()
 		if err != nil {
@@ -97,11 +103,138 @@ func (l *Listener) HandleConnection(cbOnConnect func(cdt *connection.ConnectionD
 			continue
 		}
 
-		go l.ConnectionMgr.HandleConnection(
-			conn,
-			func(cdt *connection.ConnectionData) {
-				cbOnConnect(cdt)
-			},
-		)
+		go func() {
+			err := l.Connection.HandleConnection(
+				conn,
+				func(cdt *connection.ConnectionData) {
+					cbOnConnect(cdt)
+				},
+			)
+			if err != nil {
+				log.Println(err)
+			}
+		}()
 	}
+}
+
+/*
+ Client Side
+*/
+
+type ClientConfig struct {
+	Address string
+	Network string
+
+	Wg *sync.WaitGroup
+	Mx *sync.RWMutex
+
+	TcpConn *net.TCPConn
+}
+
+func validateClientConfig(conf *ClientConfig) error {
+	if conf.Address == "" {
+		conf.Address = "127.0.0.1"
+	}
+	if conf.Network == "" {
+		conf.Network = "tcp"
+	}
+
+	if conf.Wg == nil {
+		conf.Wg = new(sync.WaitGroup)
+	}
+
+	if conf.Mx == nil {
+		conf.Mx = new(sync.RWMutex)
+	}
+
+	if conf.TcpConn == nil {
+		addr, err := net.ResolveTCPAddr("tcp", ":8000")
+		if err != nil {
+			return err
+		}
+
+		conn, err := net.DialTCP(conf.Network, nil, addr)
+		if err != nil {
+			return err
+		}
+
+		conf.TcpConn = conn
+	}
+
+	return nil
+}
+
+type Connection struct {
+	Wg *sync.WaitGroup
+	Mx *sync.RWMutex
+
+	TcpConn  *net.TCPConn
+	Feildkit *packet.FieldkitManager
+
+	*ConnectionData
+
+	ServerHeader *connection.ServerConnectionHeader
+}
+
+func NewConnection(conf *ClientConfig, connectionHeader connection.ClientConnectionHeader) (*Connection, error) {
+	if conf == nil {
+		conf = &ClientConfig{}
+	}
+	err := validateClientConfig(conf)
+	if err != nil {
+		return nil, err
+	}
+
+	ipk := in.NewInPacket(conf.TcpConn)
+	opk := out.NewOutPacket(conf.TcpConn)
+
+	err = opk.WriteJson(connectionHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	connectionStatus := &connection.Status{}
+	err = opk.WriteJson(connectionStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	serverConnectionHeader := &connection.ServerConnectionHeader{}
+	err = ipk.ReadJson(serverConnectionHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	serverConnectionStatus := &connection.Status{}
+	err = ipk.ReadJson(serverConnectionStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	feildkitManager := packet.NewFieldkitManager()
+
+	connection := &Connection{
+		Wg: conf.Wg,
+		Mx: conf.Mx,
+
+		TcpConn:  conf.TcpConn,
+		Feildkit: feildkitManager,
+
+		ConnectionData: &ConnectionData{
+			Ipk: ipk,
+			Opk: opk,
+		},
+
+		ServerHeader: serverConnectionHeader,
+	}
+	return connection, nil
+}
+
+type ConnectionData struct {
+	Ipk *in.InPacket
+	Opk *out.OutPacket
+}
+
+func (c *Connection) Call(cb func(cdt *ConnectionData)) {
+	cb(c.ConnectionData)
 }

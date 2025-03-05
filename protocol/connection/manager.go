@@ -1,34 +1,22 @@
 package connection
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
 	"errors"
-	"log"
 	"net"
 	"sync"
 
 	"github.com/WeAreInSpace/dot-io/packet/in"
 	"github.com/WeAreInSpace/dot-io/packet/out"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/ssh"
 )
 
 func NewConnectionManager() (*ConnectionManager, error) {
 	devive := make(deviceMap)
 	mutex := new(sync.RWMutex)
 
-	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
-	if err != nil {
-		return nil, err
-	}
-
 	connMgr := &ConnectionManager{
 		Device: devive,
 		Mx:     mutex,
-
-		ServerPrivateKey: privateKey,
-		ServerPublicKey:  &privateKey.PublicKey,
 	}
 
 	return connMgr, nil
@@ -40,15 +28,12 @@ type ConnectionManager struct {
 	Device deviceMap
 
 	Mx *sync.RWMutex
-
-	ServerPrivateKey *rsa.PrivateKey
-	ServerPublicKey  *rsa.PublicKey
 }
 
 type ConnectionData struct {
-	Authentication  ClientAuthentication
-	ClientPublicKey string
-	Conn            *net.TCPConn
+	Authentication ClientAuthentication
+
+	Conn *net.TCPConn
 
 	Ipk *in.InPacket
 	Opk *out.OutPacket
@@ -71,8 +56,6 @@ func (mgr *ConnectionManager) Add(conn *ConnectionData) (*uuid.UUID, error) {
 	}
 
 	mgr.Device[clientUuid] = conn
-
-	log.Println(mgr.Device)
 
 	return &clientUuid, nil
 }
@@ -119,9 +102,8 @@ func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc fun
 	}
 
 	connData := &ConnectionData{
-		Authentication:  clientConnectionHeader.Authentication,
-		ClientPublicKey: clientConnectionHeader.PublicKey,
-		Conn:            conn,
+		Authentication: clientConnectionHeader.Authentication,
+		Conn:           conn,
 
 		Ipk: ipk,
 		Opk: opk,
@@ -131,20 +113,20 @@ func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc fun
 		return err
 	}
 
-	rawSshPublicKey, err := ssh.NewPublicKey(mgr.ServerPublicKey)
-	if err != nil {
-		return err
+	serverConnectionHeader := &ServerConnectionHeader{
+		ConnectionUUID: clientUuid.String(),
 	}
-	sshPublicKey := string(rawSshPublicKey.Marshal())
-
-	err = opk.WriteJson(&ServerConnectionHeader{
-		ConnectionUUID:      clientUuid.String(),
-		ConnectionPublicKey: sshPublicKey,
-	})
+	err = opk.WriteJson(serverConnectionHeader)
 	if err != nil {
 		return err
 	}
 
-	handleFunc(connData)
+	serverConnectionStatus := &Status{}
+	err = opk.WriteJson(serverConnectionStatus)
+	if err != nil {
+		return err
+	}
+
+	go handleFunc(connData)
 	return nil
 }

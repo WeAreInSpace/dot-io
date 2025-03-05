@@ -3,10 +3,9 @@ package out
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"io"
 	"net"
-
-	"github.com/bytedance/sonic"
 )
 
 func ToInt32(number int32) *bytes.Buffer {
@@ -112,7 +111,7 @@ func (opk *OutPacket) WriteStreamString(len int64, data io.Reader) error {
 
 func (opk *OutPacket) WriteJson(data any) error {
 	jsonBuffer := new(bytes.Buffer)
-	jsonEncoder := sonic.ConfigDefault.NewEncoder(jsonBuffer)
+	jsonEncoder := json.NewEncoder(jsonBuffer)
 
 	jsonEncoder.Encode(data)
 
@@ -150,4 +149,12 @@ func (opk *OutPacket) WriteStreamBytes(len int64, data io.Reader) error {
 	}
 
 	return nil
+}
+
+func TryWrite(onError func(), cb ...error) {
+	for _, err := range cb {
+		if err != nil {
+			onError()
+		}
+	}
 }
