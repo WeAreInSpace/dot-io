@@ -33,7 +33,6 @@ type ClientAuthentication struct {
 */
 
 type ServerConnectionHeader struct {
-	ConnectionUUID string `json:"uuid"`
 }
 
 type Status struct {
