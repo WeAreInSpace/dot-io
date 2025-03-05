@@ -128,6 +128,8 @@ type ClientConfig struct {
 	Wg *sync.WaitGroup
 	Mx *sync.RWMutex
 
+	Feildkit *packet.FieldkitManager
+
 	TcpConn *net.TCPConn
 }
 
@@ -161,6 +163,10 @@ func validateClientConfig(conf *ClientConfig) error {
 		conf.TcpConn = conn
 	}
 
+	if conf.Feildkit == nil {
+		conf.Feildkit = packet.NewFieldkitManager()
+	}
+
 	return nil
 }
 
@@ -176,7 +182,7 @@ type Connection struct {
 	ServerHeader *connection.ServerConnectionHeader
 }
 
-func NewConnection(conf *ClientConfig, connectionHeader connection.ClientConnectionHeader) (*Connection, error) {
+func NewConnection(conf *ClientConfig, clientConnectionHeader connection.ClientConnectionHeader) (*Connection, error) {
 	if conf == nil {
 		conf = &ClientConfig{}
 	}
@@ -188,37 +194,31 @@ func NewConnection(conf *ClientConfig, connectionHeader connection.ClientConnect
 	ipk := in.NewInPacket(conf.TcpConn)
 	opk := out.NewOutPacket(conf.TcpConn)
 
-	err = opk.WriteJson(connectionHeader)
-	if err != nil {
-		return nil, err
-	}
-
-	connectionStatus := &connection.Status{}
-	err = opk.WriteJson(connectionStatus)
+	clientConnectionStatus := &connection.Status{}
+	err = packet.TryAndRuturnThis(
+		opk.WriteJson(clientConnectionHeader),
+		opk.WriteJson(clientConnectionStatus),
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	serverConnectionHeader := &connection.ServerConnectionHeader{}
-	err = ipk.ReadJson(serverConnectionHeader)
-	if err != nil {
-		return nil, err
-	}
-
 	serverConnectionStatus := &connection.Status{}
-	err = ipk.ReadJson(serverConnectionStatus)
+	err = packet.TryAndRuturnThis(
+		ipk.ReadJsonTo(serverConnectionHeader),
+		ipk.ReadJsonTo(serverConnectionStatus),
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	feildkitManager := packet.NewFieldkitManager()
 
 	connection := &Connection{
 		Wg: conf.Wg,
 		Mx: conf.Mx,
 
 		TcpConn:  conf.TcpConn,
-		Feildkit: feildkitManager,
+		Feildkit: conf.Feildkit,
 
 		ConnectionData: &ConnectionData{
 			Ipk: ipk,

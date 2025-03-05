@@ -4,6 +4,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/WeAreInSpace/dot-io/packet"
 	"github.com/WeAreInSpace/dot-io/packet/in"
 	"github.com/WeAreInSpace/dot-io/packet/out"
 )
@@ -36,13 +37,21 @@ func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc fun
 	ipk := in.NewInPacket(conn)
 
 	clientConnectionHeader := &ClientConnectionHeader{}
-	err := ipk.ReadJson(clientConnectionHeader)
+	clientConnectionStatus := &Status{}
+	err := packet.TryAndRuturnThis(
+		ipk.ReadJsonTo(clientConnectionHeader),
+		ipk.ReadJsonTo(clientConnectionStatus),
+	)
 	if err != nil {
 		return err
 	}
 
-	clientConnectionStatus := &Status{}
-	err = ipk.ReadJson(clientConnectionStatus)
+	serverConnectionHeader := &ServerConnectionHeader{}
+	serverConnectionStatus := &Status{}
+	err = packet.TryAndRuturnThis(
+		opk.WriteJson(serverConnectionHeader),
+		opk.WriteJson(serverConnectionStatus),
+	)
 	if err != nil {
 		return err
 	}
@@ -54,19 +63,7 @@ func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc fun
 		Ipk: ipk,
 		Opk: opk,
 	}
-
-	serverConnectionHeader := &ServerConnectionHeader{}
-	err = opk.WriteJson(serverConnectionHeader)
-	if err != nil {
-		return err
-	}
-
-	serverConnectionStatus := &Status{}
-	err = opk.WriteJson(serverConnectionStatus)
-	if err != nil {
-		return err
-	}
-
 	go handleFunc(connData)
+
 	return nil
 }

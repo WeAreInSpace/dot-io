@@ -1,8 +1,6 @@
 package packet
 
 import (
-	"io"
-
 	"github.com/WeAreInSpace/mlish"
 )
 
@@ -111,37 +109,37 @@ func validateFeildkitParams(action string, feildType string, feildName string, f
 
 //Write
 
-func (f *FeildkitGroup) WriteInt32(data int32, feildName string, feildDesc ...string) {
+func (f *FeildkitGroup) WriteInt32(feildName string, feildDesc ...string) {
 	feildData := validateFeildkitParams("write", "integer-32bit", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildkitGroup) WriteInt64(data int64, feildName string, feildDesc ...string) {
+func (f *FeildkitGroup) WriteInt64(feildName string, feildDesc ...string) {
 	feildData := validateFeildkitParams("write", "integer-64bit", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildkitGroup) WriteString(data string, feildName string, feildDesc ...string) {
+func (f *FeildkitGroup) WriteString(feildName string, feildDesc ...string) {
 	feildData := validateFeildkitParams("write", "string", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildkitGroup) WriteStreamString(len int64, data io.Reader, feildName string, feildDesc ...string) {
+func (f *FeildkitGroup) WriteStreamString(feildName string, feildDesc ...string) {
 	feildData := validateFeildkitParams("write", "string", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildkitGroup) WriteJson(data any, feildName string, feildDesc ...string) {
+func (f *FeildkitGroup) WriteJson(feildName string, feildDesc ...string) {
 	feildData := validateFeildkitParams("write", "json-string", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildkitGroup) WriteBytes(data []byte, feildName string, feildDesc ...string) {
+func (f *FeildkitGroup) WriteBytes(feildName string, feildDesc ...string) {
 	feildData := validateFeildkitParams("write", "byte-array", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildkitGroup) WriteStreamBytes(len int64, data io.Reader, feildName string, feildDesc ...string) {
+func (f *FeildkitGroup) WriteStreamBytes(feildName string, feildDesc ...string) {
 	feildData := validateFeildkitParams("write", "byte-array", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
@@ -168,7 +166,7 @@ func (f *FeildkitGroup) ReadStreamString(feildName string, feildDesc ...string) 
 	f.feildModel.Add(feildData)
 }
 
-func (f *FeildkitGroup) ReadJson(val any, feildName string, feildDesc ...string) {
+func (f *FeildkitGroup) ReadJson(feildName string, feildDesc ...string) {
 	feildData := validateFeildkitParams("read", "json-string", feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
@@ -181,4 +179,30 @@ func (f *FeildkitGroup) ReadBytes(feildName string, feildDesc ...string) {
 func (f *FeildkitGroup) ReadStreamBytes(feildName string, feildDesc ...string) {
 	feildData := validateFeildkitParams("read", "byte-array", feildName, feildDesc)
 	f.feildModel.Add(feildData)
+}
+
+func Try(onError func(err error), cb ...error) {
+	for _, err := range cb {
+		if err != nil {
+			onError(err)
+		}
+	}
+}
+
+func TryAndRuturn(onError func(err error) error, cb ...error) error {
+	for _, err := range cb {
+		if err != nil {
+			return onError(err)
+		}
+	}
+	return nil
+}
+
+func TryAndRuturnThis(cb ...error) error {
+	for _, err := range cb {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -41,9 +41,22 @@ type PacketReader interface {
 	ReadInt64() (int64, error)
 	ReadString() (string, error)
 	ReadStreamString() (*bytes.Buffer, error)
-	ReadJson(val any) error
+	ReadJson() (val any, err error)
 	ReadBytes() ([]byte, error)
 	ReadStreamBytes() (*bytes.Buffer, error)
+}
+
+type PacketReaderTo interface {
+	ReadTo(len int64, data []byte) error
+	ReadStreamTo(len int64, buffer *bytes.Buffer) error
+
+	ReadInt32To(*int32) error
+	ReadInt64To(*int64) error
+	ReadStringTo(*string) error
+	ReadStreamStringTo(*bytes.Buffer) error
+	ReadJsonTo(val any) error
+	ReadBytesTo(data []byte) error
+	ReadStreamBytesTo(buffer *bytes.Buffer) error
 }
 
 type InPacket struct {
@@ -69,6 +82,17 @@ func (ipk *InPacket) Read(len int64) ([]byte, error) {
 	return byteBuffer, nil
 }
 
+func (ipk *InPacket) ReadTo(len int64, data []byte) error {
+	readData, err := ipk.Read(len)
+	if err != nil {
+		return err
+	}
+
+	copy(data, readData)
+
+	return nil
+}
+
 func (ipk *InPacket) ReadStream(len int64) (*bytes.Buffer, error) {
 	err := ipk.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 	if err != nil {
@@ -88,6 +112,24 @@ func (ipk *InPacket) ReadStream(len int64) (*bytes.Buffer, error) {
 	return byteBuffer, nil
 }
 
+func (ipk *InPacket) ReadStreamTo(len int64, buffer *bytes.Buffer) error {
+	err := ipk.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+	if err != nil {
+		return err
+	}
+
+	written, err := io.CopyN(buffer, ipk.conn, len)
+	if (written < len) || (err != nil) {
+		return err
+	}
+
+	if err, ok := err.(net.Error); ok && err.Timeout() {
+		return errors.New("read timeout")
+	}
+
+	return nil
+}
+
 func (ipk *InPacket) ReadInt32() (int32, error) {
 	rawData, err := ipk.ReadStream(4)
 	if err != nil {
@@ -101,6 +143,17 @@ func (ipk *InPacket) ReadInt32() (int32, error) {
 	return number, nil
 }
 
+func (ipk *InPacket) ReadInt32To(data *int32) error {
+	readData, err := ipk.ReadInt32()
+	if err != nil {
+		return err
+	}
+
+	*data = readData
+
+	return nil
+}
+
 func (ipk *InPacket) ReadInt64() (int64, error) {
 	rawData, err := ipk.ReadStream(8)
 	if err != nil {
@@ -112,6 +165,17 @@ func (ipk *InPacket) ReadInt64() (int64, error) {
 		return 0, err
 	}
 	return number, nil
+}
+
+func (ipk *InPacket) ReadInt64To(data *int64) error {
+	readData, err := ipk.ReadInt64()
+	if err != nil {
+		return err
+	}
+
+	*data = readData
+
+	return nil
 }
 
 func (ipk *InPacket) ReadString() (string, error) {
@@ -128,6 +192,17 @@ func (ipk *InPacket) ReadString() (string, error) {
 	return string(rawData), nil
 }
 
+func (ipk *InPacket) ReadStringTo(data *string) error {
+	readData, err := ipk.ReadString()
+	if err != nil {
+		return err
+	}
+
+	*data = readData
+
+	return nil
+}
+
 func (ipk *InPacket) ReadStreamString() (*bytes.Buffer, error) {
 	length, err := ipk.ReadInt64()
 	if err != nil {
@@ -142,7 +217,33 @@ func (ipk *InPacket) ReadStreamString() (*bytes.Buffer, error) {
 	return rawData, nil
 }
 
-func (ipk *InPacket) ReadJson(val any) error {
+func (ipk *InPacket) ReadStreamStringTo(buffer *bytes.Buffer) error {
+	length, err := ipk.ReadInt64()
+	if err != nil {
+		return err
+	}
+
+	err = ipk.ReadStreamTo(length, buffer)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ipk *InPacket) ReadJson() (val any, err error) {
+	jsonString, err := ipk.ReadStreamString()
+	if err != nil {
+		return
+	}
+
+	jsonDecoder := sonic.ConfigDefault.NewDecoder(jsonString)
+	jsonDecoder.Decode(&val)
+
+	return
+}
+
+func (ipk *InPacket) ReadJsonTo(val any) error {
 	jsonString, err := ipk.ReadStreamString()
 	if err != nil {
 		return err
@@ -168,6 +269,17 @@ func (ipk *InPacket) ReadBytes() ([]byte, error) {
 	return byteBuf, nil
 }
 
+func (ipk *InPacket) ReadBytesTo(data []byte) error {
+	readData, err := ipk.ReadBytes()
+	if err != nil {
+		return err
+	}
+
+	copy(data, readData)
+
+	return nil
+}
+
 func (ipk *InPacket) ReadStreamBytes() (*bytes.Buffer, error) {
 	length, err := ipk.ReadInt64()
 	if err != nil {
@@ -180,4 +292,18 @@ func (ipk *InPacket) ReadStreamBytes() (*bytes.Buffer, error) {
 	}
 
 	return byteBuf, nil
+}
+
+func (ipk *InPacket) ReadStreamBytesTo(buffer *bytes.Buffer) error {
+	length, err := ipk.ReadInt64()
+	if err != nil {
+		return err
+	}
+
+	err = ipk.ReadStreamTo(length, buffer)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

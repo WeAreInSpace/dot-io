@@ -57,7 +57,7 @@ type ShowDataSchema struct {
 
 func show(cdt *connection.ConnectionData) {
 	dataToShow := &ShowDataSchema{}
-	err := cdt.Ipk.ReadJson(dataToShow)
+	err := cdt.Ipk.ReadJsonTo(dataToShow)
 	if err != nil {
 		log.Fatalln(err)
 	}

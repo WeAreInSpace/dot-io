@@ -150,11 +150,3 @@ func (opk *OutPacket) WriteStreamBytes(len int64, data io.Reader) error {
 
 	return nil
 }
-
-func TryWrite(onError func(), cb ...error) {
-	for _, err := range cb {
-		if err != nil {
-			onError()
-		}
-	}
-}
