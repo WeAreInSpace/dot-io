@@ -27,7 +27,7 @@ type ServerConfig struct {
 
 func validateServerConfig(conf *ServerConfig) error {
 	if conf.Address == "" {
-		conf.Address = "127.0.0.1"
+		conf.Address = "127.0.0.1:42500"
 	}
 	if conf.Network == "" {
 		conf.Network = "tcp"
@@ -42,7 +42,7 @@ func validateServerConfig(conf *ServerConfig) error {
 	}
 
 	if conf.TcpListener == nil {
-		addr, err := net.ResolveTCPAddr("tcp", ":8000")
+		addr, err := net.ResolveTCPAddr("tcp", conf.Address)
 		if err != nil {
 			return err
 		}
@@ -135,7 +135,7 @@ type ClientConfig struct {
 
 func validateClientConfig(conf *ClientConfig) error {
 	if conf.Address == "" {
-		conf.Address = "127.0.0.1"
+		conf.Address = "127.0.0.1:42500"
 	}
 	if conf.Network == "" {
 		conf.Network = "tcp"
@@ -150,7 +150,7 @@ func validateClientConfig(conf *ClientConfig) error {
 	}
 
 	if conf.TcpConn == nil {
-		addr, err := net.ResolveTCPAddr("tcp", ":8000")
+		addr, err := net.ResolveTCPAddr("tcp", conf.Address)
 		if err != nil {
 			return err
 		}
