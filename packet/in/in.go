@@ -64,11 +64,6 @@ type InPacket struct {
 }
 
 func (ipk *InPacket) Read(len int64) ([]byte, error) {
-	err := ipk.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
-	if err != nil {
-		return nil, err
-	}
-
 	byteBuffer := make([]byte, len)
 	written, err := ipk.conn.Read(byteBuffer)
 	if written < int(len) {
@@ -77,6 +72,9 @@ func (ipk *InPacket) Read(len int64) ([]byte, error) {
 
 	if err, ok := err.(net.Error); ok && err.Timeout() {
 		return nil, errors.New("read timeout")
+	} else if err != nil {
+		ipk.conn.Close()
+		return nil, err
 	}
 
 	return byteBuffer, nil
@@ -94,11 +92,6 @@ func (ipk *InPacket) ReadTo(len int64, data []byte) error {
 }
 
 func (ipk *InPacket) ReadStream(len int64) (*bytes.Buffer, error) {
-	err := ipk.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
-	if err != nil {
-		return nil, err
-	}
-
 	byteBuffer := new(bytes.Buffer)
 	written, err := io.CopyN(byteBuffer, ipk.conn, len)
 	if (written < len) || (err != nil) {
@@ -107,12 +100,15 @@ func (ipk *InPacket) ReadStream(len int64) (*bytes.Buffer, error) {
 
 	if err, ok := err.(net.Error); ok && err.Timeout() {
 		return nil, errors.New("read timeout")
+	} else if err != nil {
+		ipk.conn.Close()
+		return nil, err
 	}
 
 	return byteBuffer, nil
 }
 
-func (ipk *InPacket) ReadStreamTo(len int64, buffer *bytes.Buffer) error {
+func (ipk *InPacket) ReadStreamTo(len int64, buffer io.Writer) error {
 	err := ipk.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 	if err != nil {
 		return err
@@ -217,7 +213,7 @@ func (ipk *InPacket) ReadStreamString() (*bytes.Buffer, error) {
 	return rawData, nil
 }
 
-func (ipk *InPacket) ReadStreamStringTo(buffer *bytes.Buffer) error {
+func (ipk *InPacket) ReadStreamStringTo(buffer io.Writer) error {
 	length, err := ipk.ReadInt64()
 	if err != nil {
 		return err
@@ -294,7 +290,7 @@ func (ipk *InPacket) ReadStreamBytes() (*bytes.Buffer, error) {
 	return byteBuf, nil
 }
 
-func (ipk *InPacket) ReadStreamBytesTo(buffer *bytes.Buffer) error {
+func (ipk *InPacket) ReadStreamBytesTo(buffer io.Writer) error {
 	length, err := ipk.ReadInt64()
 	if err != nil {
 		return err

@@ -113,6 +113,7 @@ func (l *Listener) OnConnection(cbOnConnect func(cdt *connection.ConnectionData)
 			if err != nil {
 				log.Println(err)
 			}
+
 		}()
 	}
 }

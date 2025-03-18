@@ -3,6 +3,7 @@ package connection
 import (
 	"net"
 	"sync"
+	"time"
 
 	"github.com/WeAreInSpace/dot-io/packet"
 	"github.com/WeAreInSpace/dot-io/packet/in"
@@ -33,6 +34,9 @@ type ConnectionData struct {
 }
 
 func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc func(cdt *ConnectionData)) error {
+	conn.SetKeepAlive(true)
+	conn.SetKeepAlivePeriod(time.Second * 10)
+
 	opk := out.NewOutPacket(conn)
 	ipk := in.NewInPacket(conn)
 
@@ -63,6 +67,7 @@ func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc fun
 		Ipk: ipk,
 		Opk: opk,
 	}
+
 	go handleFunc(connData)
 
 	return nil
