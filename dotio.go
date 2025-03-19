@@ -1,6 +1,7 @@
 package dotio
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net"
@@ -11,7 +12,6 @@ import (
 	"github.com/WeAreInSpace/dot-io/packet/in"
 	"github.com/WeAreInSpace/dot-io/packet/out"
 	"github.com/WeAreInSpace/dot-io/protocol/connection"
-	"github.com/bytedance/sonic"
 )
 
 // Protocol
@@ -23,7 +23,7 @@ type ProtocolSchema struct {
 }
 
 func (p *ProtocolSchema) Export(w io.Writer) {
-	encoder := sonic.ConfigDefault.NewEncoder(w)
+	encoder := json.NewEncoder(w)
 	encoder.Encode(p)
 }
 

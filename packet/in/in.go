@@ -3,12 +3,11 @@ package in
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"io"
 	"net"
 	"time"
-
-	"github.com/bytedance/sonic"
 )
 
 func ToInt32(data *bytes.Buffer) (number int32, err error) {
@@ -225,7 +224,7 @@ func (ipk *InPacket) ReadJson() (val any, err error) {
 		return
 	}
 
-	jsonDecoder := sonic.ConfigDefault.NewDecoder(jsonString)
+	jsonDecoder := json.NewDecoder(jsonString)
 	jsonDecoder.Decode(&val)
 
 	return
@@ -237,7 +236,7 @@ func (ipk *InPacket) ReadJsonTo(val any) error {
 		return err
 	}
 
-	jsonDecoder := sonic.ConfigDefault.NewDecoder(jsonString)
+	jsonDecoder := json.NewDecoder(jsonString)
 	jsonDecoder.Decode(&val)
 
 	return nil
