@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"sync"
 
 	dotio "github.com/WeAreInSpace/dot-io"
@@ -28,8 +29,13 @@ func server() {
 		func(cdt *connection.ConnectionData) {
 			for {
 				cmd, err := cdt.Ipk.ReadString()
-				if err != nil {
-					log.Println("ggg", err)
+				if err, ok := err.(net.Error); ok && err != nil {
+					log.Println("Net error: ", err)
+					cdt.Conn.Close()
+					break
+				} else if err != nil {
+					log.Println("Error: ", err)
+					cdt.Conn.Close()
 					break
 				}
 

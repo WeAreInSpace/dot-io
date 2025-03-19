@@ -15,6 +15,7 @@ func main() {
 			callHello(cdt)
 		},
 	)
+	conn.Close()
 }
 
 type ShowDataSchema struct {

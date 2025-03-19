@@ -278,3 +278,7 @@ type ConnectionData struct {
 func (c *Connection) Call(cb func(cdt *ConnectionData)) {
 	cb(c.ConnectionData)
 }
+
+func (c *Connection) Close() {
+	c.TcpConn.Close()
+}
