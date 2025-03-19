@@ -1,15 +1,31 @@
 package dotio
 
 import (
+	"io"
 	"log"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/WeAreInSpace/dot-io/packet"
 	"github.com/WeAreInSpace/dot-io/packet/in"
 	"github.com/WeAreInSpace/dot-io/packet/out"
 	"github.com/WeAreInSpace/dot-io/protocol/connection"
+	"github.com/bytedance/sonic"
 )
+
+// Protocol
+
+type ProtocolSchema struct {
+	ProtocolVersion int                        `json:"version"`
+	KeepAlivePeriod int                        `json:"keepalive-period"`
+	FeildGroup      []*packet.FeildGroupSchema `json:"feild-groups"`
+}
+
+func (p *ProtocolSchema) Export(w io.Writer) {
+	encoder := sonic.ConfigDefault.NewEncoder(w)
+	encoder.Encode(p)
+}
 
 /*
  Server Side
@@ -21,6 +37,8 @@ type ServerConfig struct {
 
 	Wg *sync.WaitGroup
 	Mx *sync.RWMutex
+
+	KeepAlivePeriod int64
 
 	TcpListener *net.TCPListener
 }
@@ -39,6 +57,10 @@ func validateServerConfig(conf *ServerConfig) error {
 
 	if conf.Mx == nil {
 		conf.Mx = new(sync.RWMutex)
+	}
+
+	if conf.KeepAlivePeriod <= 0 {
+		conf.KeepAlivePeriod = 10
 	}
 
 	if conf.TcpListener == nil {
@@ -62,9 +84,12 @@ type Listener struct {
 	Wg *sync.WaitGroup
 	Mx *sync.RWMutex
 
-	TcpListener *net.TCPListener
-	Connection  *connection.ConnectionManager
-	Feildkit    *packet.FieldkitManager
+	KeepAlivePeriod int64
+
+	TcpListener    *net.TCPListener
+	Connection     *connection.ConnectionManager
+	Feildkit       *packet.FieldkitManager
+	ProtocolSchema *ProtocolSchema
 }
 
 func NewListener(conf *ServerConfig) (*Listener, error) {
@@ -87,6 +112,8 @@ func NewListener(conf *ServerConfig) (*Listener, error) {
 		Wg: conf.Wg,
 		Mx: conf.Mx,
 
+		KeepAlivePeriod: conf.KeepAlivePeriod,
+
 		TcpListener: conf.TcpListener,
 		Connection:  connectionMgr,
 		Feildkit:    feildkitManager,
@@ -102,6 +129,9 @@ func (l *Listener) OnConnection(cbOnConnect func(cdt *connection.ConnectionData)
 			log.Println(err)
 			continue
 		}
+
+		conn.SetKeepAlive(true)
+		conn.SetKeepAlivePeriod(time.Second * time.Duration(l.KeepAlivePeriod))
 
 		go func() {
 			err := l.Connection.HandleConnection(
@@ -129,6 +159,8 @@ type ClientConfig struct {
 	Wg *sync.WaitGroup
 	Mx *sync.RWMutex
 
+	KeepAlivePeriod int64
+
 	Feildkit *packet.FieldkitManager
 
 	TcpConn *net.TCPConn
@@ -150,6 +182,10 @@ func validateClientConfig(conf *ClientConfig) error {
 		conf.Mx = new(sync.RWMutex)
 	}
 
+	if conf.KeepAlivePeriod <= 0 {
+		conf.KeepAlivePeriod = 10
+	}
+
 	if conf.TcpConn == nil {
 		addr, err := net.ResolveTCPAddr("tcp", ":8000")
 		if err != nil {
@@ -160,6 +196,9 @@ func validateClientConfig(conf *ClientConfig) error {
 		if err != nil {
 			return err
 		}
+
+		conn.SetKeepAlive(true)
+		conn.SetKeepAlivePeriod(time.Second * time.Duration(conf.KeepAlivePeriod))
 
 		conf.TcpConn = conn
 	}

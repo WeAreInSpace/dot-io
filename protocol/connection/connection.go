@@ -1,57 +1,70 @@
 package connection
 
-// Client Side
+import (
+	"net"
+	"sync"
 
-// Connection Request
+	"github.com/WeAreInSpace/dot-io/packet"
+	"github.com/WeAreInSpace/dot-io/packet/in"
+	"github.com/WeAreInSpace/dot-io/packet/out"
+)
 
-/*
-	Connection Field {
-		ClientConnectionHeader: json 1
-		Status: json 2
+func NewConnectionManager() (*ConnectionManager, error) {
+	mutex := new(sync.RWMutex)
+
+	connMgr := &ConnectionManager{
+		Mx: mutex,
 	}
-*/
 
-type ClientConnectionHeader struct {
-	ProtocolVersion int8                 `json:"proto_ver"` //1.0
-	Authentication  ClientAuthentication `json:"auth"`
+	return connMgr, nil
 }
 
-type ClientAuthentication struct {
-	JWT    string `json:"jwt"`
-	Bearer string `json:"bearer"`
+type ConnectionManager struct {
+	Mx *sync.RWMutex
 }
 
-// Server Side
+type ConnectionData struct {
+	Authentication ClientAuthentication
 
-// Connection Response
+	Conn *net.TCPConn
 
-/*
-	Connection Field {
-		ServerConnectionHeader: json 1
-		Status: json 2
+	Ipk *in.InPacket
+	Opk *out.OutPacket
+}
+
+func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc func(cdt *ConnectionData)) error {
+	opk := out.NewOutPacket(conn)
+	ipk := in.NewInPacket(conn)
+
+	clientConnectionHeader := &ClientConnectionHeader{}
+	clientConnectionStatus := &Status{}
+	err := packet.TryAndRuturnThis(
+		ipk.ReadJsonTo(clientConnectionHeader),
+		ipk.ReadJsonTo(clientConnectionStatus),
+	)
+	if err != nil {
+		return err
 	}
-*/
 
-type ServerConnectionHeader struct {
-}
+	serverConnectionHeader := &ServerConnectionHeader{}
+	serverConnectionStatus := &Status{}
+	err = packet.TryAndRuturnThis(
+		opk.WriteJson(serverConnectionHeader),
+		opk.WriteJson(serverConnectionStatus),
+	)
+	if err != nil {
+		return err
+	}
 
-type Status struct {
-	// 1 Ok
-	//
-	// 2 Client Error
-	//
-	// 3 Server Error
-	Code int8 `json:"code"`
+	connData := &ConnectionData{
+		Authentication: clientConnectionHeader.Authentication,
+		Conn:           conn,
 
-	// 1 Client
-	//
-	// 2 Server
-	About int8 `json:"about"`
+		Ipk: ipk,
+		Opk: opk,
+	}
 
-	// 1 Pass
-	//
-	// 2 Unauthorized
-	//
-	// 2 Bad connection
-	Info int8 `json:"info"`
+	go handleFunc(connData)
+
+	return nil
 }

@@ -40,28 +40,28 @@ func (fmgr *FieldkitManager) New(fieldGroupName string) *FeildkitGroup {
 	return feild
 }
 
-type FeildkitGroupSchema struct {
-	Name   string           `json:"name"`
-	Feilds []FeildkitSchema `json:"feilds"`
+type FeildGroupSchema struct {
+	Name   string        `json:"name"`
+	Feilds []FeildSchema `json:"feilds"`
 }
 
-type FeildkitSchema struct {
+type FeildSchema struct {
 	Type         string   `json:"type"`
 	Name         string   `json:"name"`
 	Descriptions []string `json:"descriptions"`
 	Action       string   `json:"action"` //write, read
 }
 
-func (fmgr *FieldkitManager) Export() []FeildkitGroupSchema {
-	var feildGroups []FeildkitGroupSchema
+func (fmgr *FieldkitManager) Export() []FeildGroupSchema {
+	var feildGroups []FeildGroupSchema
 
 	fmgr.Feilds.For(
 		func(item *mlish.ForParams[FeildkitGroupData]) {
-			var feilds []FeildkitSchema
+			var feilds []FeildSchema
 
 			item.DataAddr().FeildkitData.For(
 				func(item *mlish.ForParams[FeildkitData]) {
-					feild := FeildkitSchema{
+					feild := FeildSchema{
 						Type:         item.DataAddr().Type,
 						Name:         item.DataAddr().Name,
 						Descriptions: item.DataAddr().Descriptions,
@@ -71,12 +71,12 @@ func (fmgr *FieldkitManager) Export() []FeildkitGroupSchema {
 				},
 			)
 
-			feildGroup := &FeildkitGroupSchema{
+			feildGroup := FeildGroupSchema{
 				Name:   item.DataAddr().Name,
 				Feilds: feilds,
 			}
 
-			feildGroups = append(feildGroups, *feildGroup)
+			feildGroups = append(feildGroups, feildGroup)
 		},
 	)
 

@@ -46,7 +46,7 @@ type PacketReader interface {
 	ReadStreamBytes() (*bytes.Buffer, error)
 }
 
-type PacketReaderTo interface {
+type PacketThrowableReader interface {
 	ReadTo(len int64, data []byte) error
 	ReadStreamTo(len int64, buffer *bytes.Buffer) error
 
@@ -69,11 +69,7 @@ func (ipk *InPacket) Read(len int64) ([]byte, error) {
 	if written < int(len) {
 		return nil, errors.New("there is no data left")
 	}
-
-	if err, ok := err.(net.Error); ok && err.Timeout() {
-		return nil, errors.New("read timeout")
-	} else if err != nil {
-		ipk.conn.Close()
+	if err != nil {
 		return nil, err
 	}
 
@@ -94,14 +90,10 @@ func (ipk *InPacket) ReadTo(len int64, data []byte) error {
 func (ipk *InPacket) ReadStream(len int64) (*bytes.Buffer, error) {
 	byteBuffer := new(bytes.Buffer)
 	written, err := io.CopyN(byteBuffer, ipk.conn, len)
-	if (written < len) || (err != nil) {
+	if written < len {
 		return nil, err
 	}
-
-	if err, ok := err.(net.Error); ok && err.Timeout() {
-		return nil, errors.New("read timeout")
-	} else if err != nil {
-		ipk.conn.Close()
+	if err != nil {
 		return nil, err
 	}
 
