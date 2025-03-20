@@ -8,6 +8,15 @@ import (
 	"io"
 )
 
+/*
+Convert binary to int32
+
+# Example
+
+	buffer := new(bytes.Buffer)
+	buffer.WriteByte(byte(255))
+	ToInt32(buffer)
+*/
 func ToInt32(data io.Reader) (number int32, err error) {
 	err = binary.Read(data, binary.BigEndian, &number)
 	if err != nil {
@@ -16,14 +25,25 @@ func ToInt32(data io.Reader) (number int32, err error) {
 	return
 }
 
+/*
+Convert binary to int64
+
+# Example
+
+	buffer := new(bytes.Buffer)
+	buffer.WriteByte(byte(255))
+	ToInt64(buffer)
+*/
 func ToInt64(data io.Reader) (number int64, err error) {
 	err = binary.Read(data, binary.BigEndian, &number)
 	if err != nil {
 		return 0, err
 	}
+
 	return
 }
 
+// Return an instance of Inbound
 func NewInbound(r io.Reader) *Inbound {
 	return &Inbound{
 		r: r,
@@ -59,9 +79,9 @@ type Inbound struct {
 	r io.Reader
 }
 
-func (ipk *Inbound) read(len int64) ([]byte, error) {
+func (ib *Inbound) read(len int64) ([]byte, error) {
 	byteBuffer := make([]byte, len)
-	written, err := ipk.r.Read(byteBuffer)
+	written, err := ib.r.Read(byteBuffer)
 	if written < int(len) {
 		return nil, errors.New("there is no data left")
 	}
@@ -72,9 +92,9 @@ func (ipk *Inbound) read(len int64) ([]byte, error) {
 	return byteBuffer, nil
 }
 
-func (ipk *Inbound) readStream(len int64) (io.ReadWriter, error) {
+func (ib *Inbound) readStream(len int64) (io.ReadWriter, error) {
 	byteBuffer := new(bytes.Buffer)
-	written, err := io.CopyN(byteBuffer, ipk.r, len)
+	written, err := io.CopyN(byteBuffer, ib.r, len)
 	if written < len {
 		return nil, err
 	}
@@ -85,8 +105,8 @@ func (ipk *Inbound) readStream(len int64) (io.ReadWriter, error) {
 	return byteBuffer, nil
 }
 
-func (ipk *Inbound) readStreamTo(len int64, buffer io.Writer) error {
-	written, err := io.CopyN(buffer, ipk.r, len)
+func (ib *Inbound) readStreamTo(len int64, buffer io.Writer) error {
+	written, err := io.CopyN(buffer, ib.r, len)
 	if (written < len) || (err != nil) {
 		return err
 	}
@@ -94,8 +114,19 @@ func (ipk *Inbound) readStreamTo(len int64, buffer io.Writer) error {
 	return nil
 }
 
-func (ipk *Inbound) ReadInt32() (int32, error) {
-	rawData, err := ipk.readStream(4)
+/*
+Read int32 from reader and return (int32, error)
+
+# Example
+
+	number, err := ib.ReadInt32()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(number)
+*/
+func (ib *Inbound) ReadInt32() (int32, error) {
+	rawData, err := ib.readStream(4)
 	if err != nil {
 		return 0, err
 	}
@@ -107,8 +138,20 @@ func (ipk *Inbound) ReadInt32() (int32, error) {
 	return number, nil
 }
 
-func (ipk *Inbound) ReadInt32To(data *int32) error {
-	readData, err := ipk.ReadInt32()
+/*
+Read int32 from reader and set value
+
+# Example
+
+	var number int32
+	err = ib.ReadInt32To(&number)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(number)
+*/
+func (ib *Inbound) ReadInt32To(data *int32) error {
+	readData, err := ib.ReadInt32()
 	if err != nil {
 		return err
 	}
@@ -118,8 +161,19 @@ func (ipk *Inbound) ReadInt32To(data *int32) error {
 	return nil
 }
 
-func (ipk *Inbound) ReadInt64() (int64, error) {
-	rawData, err := ipk.readStream(8)
+/*
+Read int64 from reader and return (int64, error)
+
+# Example
+
+	number, err := ib.ReadInt64()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(number)
+*/
+func (ib *Inbound) ReadInt64() (int64, error) {
+	rawData, err := ib.readStream(8)
 	if err != nil {
 		return 0, err
 	}
@@ -131,8 +185,20 @@ func (ipk *Inbound) ReadInt64() (int64, error) {
 	return number, nil
 }
 
-func (ipk *Inbound) ReadInt64To(data *int64) error {
-	readData, err := ipk.ReadInt64()
+/*
+Read int64 from reader and set value
+
+# Example
+
+	var number int64
+	err = ib.ReadInt64To(&number)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(number)
+*/
+func (ib *Inbound) ReadInt64To(data *int64) error {
+	readData, err := ib.ReadInt64()
 	if err != nil {
 		return err
 	}
@@ -142,13 +208,13 @@ func (ipk *Inbound) ReadInt64To(data *int64) error {
 	return nil
 }
 
-func (ipk *Inbound) ReadString() (string, error) {
-	length, err := ipk.ReadInt64()
+func (ib *Inbound) ReadString() (string, error) {
+	length, err := ib.ReadInt64()
 	if err != nil {
 		return "", err
 	}
 
-	rawData, err := ipk.read(length)
+	rawData, err := ib.read(length)
 	if err != nil {
 		return "", err
 	}
@@ -156,8 +222,8 @@ func (ipk *Inbound) ReadString() (string, error) {
 	return string(rawData), nil
 }
 
-func (ipk *Inbound) ReadStringTo(data *string) error {
-	readData, err := ipk.ReadString()
+func (ib *Inbound) ReadStringTo(data *string) error {
+	readData, err := ib.ReadString()
 	if err != nil {
 		return err
 	}
@@ -167,13 +233,13 @@ func (ipk *Inbound) ReadStringTo(data *string) error {
 	return nil
 }
 
-func (ipk *Inbound) ReadStreamString() (io.ReadWriter, error) {
-	length, err := ipk.ReadInt64()
+func (ib *Inbound) ReadStreamString() (io.ReadWriter, error) {
+	length, err := ib.ReadInt64()
 	if err != nil {
 		return nil, err
 	}
 
-	rawData, err := ipk.readStream(length)
+	rawData, err := ib.readStream(length)
 	if err != nil {
 		return nil, err
 	}
@@ -181,13 +247,13 @@ func (ipk *Inbound) ReadStreamString() (io.ReadWriter, error) {
 	return rawData, nil
 }
 
-func (ipk *Inbound) ReadStreamStringTo(buffer io.Writer) error {
-	length, err := ipk.ReadInt64()
+func (ib *Inbound) ReadStreamStringTo(buffer io.Writer) error {
+	length, err := ib.ReadInt64()
 	if err != nil {
 		return err
 	}
 
-	err = ipk.readStreamTo(length, buffer)
+	err = ib.readStreamTo(length, buffer)
 	if err != nil {
 		return err
 	}
@@ -195,8 +261,8 @@ func (ipk *Inbound) ReadStreamStringTo(buffer io.Writer) error {
 	return nil
 }
 
-func (ipk *Inbound) ReadJson() (val any, err error) {
-	jsonString, err := ipk.ReadStreamString()
+func (ib *Inbound) ReadJson() (val any, err error) {
+	jsonString, err := ib.ReadStreamString()
 	if err != nil {
 		return
 	}
@@ -207,8 +273,8 @@ func (ipk *Inbound) ReadJson() (val any, err error) {
 	return
 }
 
-func (ipk *Inbound) ReadJsonTo(val any) error {
-	jsonString, err := ipk.ReadStreamString()
+func (ib *Inbound) ReadJsonTo(val any) error {
+	jsonString, err := ib.ReadStreamString()
 	if err != nil {
 		return err
 	}
@@ -219,13 +285,13 @@ func (ipk *Inbound) ReadJsonTo(val any) error {
 	return nil
 }
 
-func (ipk *Inbound) ReadBytes() ([]byte, error) {
-	length, err := ipk.ReadInt64()
+func (ib *Inbound) ReadBytes() ([]byte, error) {
+	length, err := ib.ReadInt64()
 	if err != nil {
 		return nil, err
 	}
 
-	byteBuf, err := ipk.read(length)
+	byteBuf, err := ib.read(length)
 	if err != nil {
 		return nil, err
 	}
@@ -233,8 +299,8 @@ func (ipk *Inbound) ReadBytes() ([]byte, error) {
 	return byteBuf, nil
 }
 
-func (ipk *Inbound) ReadBytesTo(data []byte) error {
-	readData, err := ipk.ReadBytes()
+func (ib *Inbound) ReadBytesTo(data []byte) error {
+	readData, err := ib.ReadBytes()
 	if err != nil {
 		return err
 	}
@@ -244,13 +310,13 @@ func (ipk *Inbound) ReadBytesTo(data []byte) error {
 	return nil
 }
 
-func (ipk *Inbound) ReadStreamBytes() (io.ReadWriter, error) {
-	length, err := ipk.ReadInt64()
+func (ib *Inbound) ReadStreamBytes() (io.ReadWriter, error) {
+	length, err := ib.ReadInt64()
 	if err != nil {
 		return nil, err
 	}
 
-	byteBuf, err := ipk.readStream(length)
+	byteBuf, err := ib.readStream(length)
 	if err != nil {
 		return nil, err
 	}
@@ -258,13 +324,13 @@ func (ipk *Inbound) ReadStreamBytes() (io.ReadWriter, error) {
 	return byteBuf, nil
 }
 
-func (ipk *Inbound) ReadStreamBytesTo(buffer io.Writer) error {
-	length, err := ipk.ReadInt64()
+func (ib *Inbound) ReadStreamBytesTo(buffer io.Writer) error {
+	length, err := ib.ReadInt64()
 	if err != nil {
 		return err
 	}
 
-	err = ipk.readStreamTo(length, buffer)
+	err = ib.readStreamTo(length, buffer)
 	if err != nil {
 		return err
 	}
