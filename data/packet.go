@@ -1,4 +1,4 @@
-package packet
+package data
 
 import (
 	"github.com/WeAreInSpace/mlish"
@@ -6,6 +6,7 @@ import (
 
 type FeildkitGroupData struct {
 	Name         string
+	Descriptions []string
 	FeildkitData *mlish.Model[FeildkitData]
 }
 
@@ -27,22 +28,27 @@ type FieldkitManager struct {
 	Feilds *mlish.Model[FeildkitGroupData]
 }
 
-func (fmgr *FieldkitManager) New(fieldGroupName string) *FeildkitGroup {
+func (fmgr *FieldkitManager) New(fieldGroupName string, feildGroupDesc ...string) *FeildkitGroup {
 	feildModel := mlish.NewModel[FeildkitData]()
 	feild := &FeildkitGroup{
 		feildModel: feildModel,
 	}
 
+	if feildGroupDesc == nil {
+		feildGroupDesc = []string{}
+	}
+
 	fmgr.Feilds.Add(
-		&FeildkitGroupData{Name: fieldGroupName, FeildkitData: feildModel},
+		&FeildkitGroupData{Name: fieldGroupName, FeildkitData: feildModel, Descriptions: feildGroupDesc},
 	)
 
 	return feild
 }
 
 type FeildGroupSchema struct {
-	Name   string        `json:"name"`
-	Feilds []FeildSchema `json:"feilds"`
+	Name         string        `json:"name"`
+	Descriptions []string      `json:"descriptions"`
+	Feilds       []FeildSchema `json:"feilds"`
 }
 
 type FeildSchema struct {
@@ -72,8 +78,9 @@ func (fmgr *FieldkitManager) Export() []FeildGroupSchema {
 			)
 
 			feildGroup := FeildGroupSchema{
-				Name:   item.DataAddr().Name,
-				Feilds: feilds,
+				Name:         item.DataAddr().Name,
+				Descriptions: item.DataAddr().Descriptions,
+				Feilds:       feilds,
 			}
 
 			feildGroups = append(feildGroups, feildGroup)

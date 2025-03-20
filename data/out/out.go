@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"io"
-	"net"
 )
 
 func ToInt32(number int32) *bytes.Buffer {
@@ -20,31 +19,31 @@ func ToInt64(number int64) *bytes.Buffer {
 	return binaryBuffer
 }
 
-func NewOutPacket(conn *net.TCPConn) *OutPacket {
-	return &OutPacket{
-		conn: conn,
+func NewOutbound(w io.Writer) *Outbound {
+	return &Outbound{
+		w: w,
 	}
 }
 
-type PacketWriter interface {
-	Write(data []byte) error
-	WriteStream(data io.Reader) error
+type Writer interface {
+	Write([]byte) error
+	WriteStream(io.Reader) error
 
-	WriteInt32(data int32) error
-	WriteInt64(data int64) error
-	WriteString(data string) error
-	WriteStreamString(len int64, data io.Reader) error
-	WriteJson(data any) error
-	WriteBytes(data []byte) error
-	WriteStreamBytes(len int64, data io.Reader) error
+	WriteInt32(int32) error
+	WriteInt64(int64) error
+	WriteString(string) error
+	WriteStreamString(int64, io.Reader) error
+	WriteJson(any) error
+	WriteBytes([]byte) error
+	WriteStreamBytes(int64, io.Reader) error
 }
 
-type OutPacket struct {
-	conn *net.TCPConn
+type Outbound struct {
+	w io.Writer
 }
 
-func (opk *OutPacket) Write(data []byte) error {
-	_, err := opk.conn.Write(data)
+func (opk *Outbound) Write(data []byte) error {
+	_, err := opk.w.Write(data)
 	if err != nil {
 		return err
 	}
@@ -52,8 +51,8 @@ func (opk *OutPacket) Write(data []byte) error {
 	return nil
 }
 
-func (opk *OutPacket) WriteStream(data io.Reader) error {
-	_, err := io.Copy(opk.conn, data)
+func (opk *Outbound) WriteStream(data io.Reader) error {
+	_, err := io.Copy(opk.w, data)
 	if err != nil {
 		return err
 	}
@@ -61,7 +60,7 @@ func (opk *OutPacket) WriteStream(data io.Reader) error {
 	return nil
 }
 
-func (opk *OutPacket) WriteInt32(data int32) error {
+func (opk *Outbound) WriteInt32(data int32) error {
 	err := opk.WriteStream(ToInt32(data))
 	if err != nil {
 		return err
@@ -70,7 +69,7 @@ func (opk *OutPacket) WriteInt32(data int32) error {
 	return nil
 }
 
-func (opk *OutPacket) WriteInt64(data int64) error {
+func (opk *Outbound) WriteInt64(data int64) error {
 	err := opk.WriteStream(ToInt64(data))
 	if err != nil {
 		return err
@@ -79,7 +78,7 @@ func (opk *OutPacket) WriteInt64(data int64) error {
 	return nil
 }
 
-func (opk *OutPacket) WriteString(data string) error {
+func (opk *Outbound) WriteString(data string) error {
 	dataLen := len(data)
 
 	err := opk.WriteInt64(int64(dataLen))
@@ -95,7 +94,7 @@ func (opk *OutPacket) WriteString(data string) error {
 	return nil
 }
 
-func (opk *OutPacket) WriteStreamString(len int64, data io.Reader) error {
+func (opk *Outbound) WriteStreamString(len int64, data io.Reader) error {
 	err := opk.WriteInt64(len)
 	if err != nil {
 		return err
@@ -109,7 +108,7 @@ func (opk *OutPacket) WriteStreamString(len int64, data io.Reader) error {
 	return nil
 }
 
-func (opk *OutPacket) WriteJson(data any) error {
+func (opk *Outbound) WriteJson(data any) error {
 	jsonBuffer := new(bytes.Buffer)
 	jsonEncoder := json.NewEncoder(jsonBuffer)
 
@@ -123,7 +122,7 @@ func (opk *OutPacket) WriteJson(data any) error {
 	return nil
 }
 
-func (opk *OutPacket) WriteBytes(data []byte) error {
+func (opk *Outbound) WriteBytes(data []byte) error {
 	err := opk.WriteInt64(int64(len(data)))
 	if err != nil {
 		return err
@@ -137,7 +136,7 @@ func (opk *OutPacket) WriteBytes(data []byte) error {
 	return nil
 }
 
-func (opk *OutPacket) WriteStreamBytes(len int64, data io.Reader) error {
+func (opk *Outbound) WriteStreamBytes(len int64, data io.Reader) error {
 	err := opk.WriteInt64(len)
 	if err != nil {
 		return err

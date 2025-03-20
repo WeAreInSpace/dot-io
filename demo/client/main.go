@@ -10,7 +10,7 @@ import (
 func main() {
 	conn := client()
 	conn.Call(
-		func(cdt *dotio.ConnectionData) {
+		func(cdt *dotio.ConnectionIO) {
 			callShow(cdt, "Hello Dot.IO\n")
 			callHello(cdt)
 		},
@@ -31,8 +31,8 @@ func client() *dotio.Connection {
 	return connection
 }
 
-func callShow(cdt *dotio.ConnectionData, message string) {
-	err := cdt.Opk.WriteString("show")
+func callShow(cdt *dotio.ConnectionIO, message string) {
+	err := cdt.Ob.WriteString("show")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -40,19 +40,19 @@ func callShow(cdt *dotio.ConnectionData, message string) {
 	dataToShow := &ShowDataSchema{
 		Message: message,
 	}
-	err = cdt.Opk.WriteJson(dataToShow)
+	err = cdt.Ob.WriteJson(dataToShow)
 	if err != nil {
 		log.Fatalln(err)
 	}
 }
 
-func callHello(cdt *dotio.ConnectionData) {
-	err := cdt.Opk.WriteString("sayHello")
+func callHello(cdt *dotio.ConnectionIO) {
+	err := cdt.Ob.WriteString("sayHello")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	str, err := cdt.Ipk.ReadString()
+	str, err := cdt.Ib.ReadString()
 	if err != nil {
 		log.Fatalln(err)
 	}

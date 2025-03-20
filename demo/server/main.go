@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"sync"
 
 	dotio "github.com/WeAreInSpace/dot-io"
@@ -13,22 +14,38 @@ import (
 func main() {
 	wg := new(sync.WaitGroup)
 
-	wg.Add(1)
-	go server()
-
-	wg.Wait()
-}
-
-func server() {
 	l, err := dotio.NewListener(nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
+	f := l.Feildkit.New("Command")
+	f.ReadString("cmd")
+
+	f = l.Feildkit.New("Show", `[ if (Command.cmd = "show") ]`)
+	f.ReadJson("msg", "Message data to show")
+
+	f = l.Feildkit.New("Say Hello", `[ if (Command.cmd = "sayHello") ]`)
+	f.WriteString("msg", "Hello World")
+
+	file, err := os.OpenFile("protocol_data/server.json", os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	l.ProtocolData.Export(file)
+
+	wg.Add(1)
+	go server(l, wg)
+
+	wg.Wait()
+}
+
+func server(l *dotio.Listener, wg *sync.WaitGroup) {
 	l.OnConnection(
 		func(cdt *connection.ConnectionData) {
 			for {
-				cmd, err := cdt.Ipk.ReadString()
+				cmd, err := cdt.Ib.ReadString()
 				if err, ok := err.(net.Error); ok && err != nil {
 					log.Println("Net error: ", err)
 					cdt.Conn.Close()
@@ -47,7 +64,7 @@ func server() {
 					}
 				case "sayHello":
 					{
-						cdt.Opk.WriteString("Hello World")
+						cdt.Ob.WriteString("Hello World")
 						continue
 					}
 				}
@@ -55,6 +72,8 @@ func server() {
 			cdt.Conn.Close()
 		},
 	)
+
+	wg.Done()
 }
 
 type ShowDataSchema struct {
@@ -63,7 +82,7 @@ type ShowDataSchema struct {
 
 func show(cdt *connection.ConnectionData) {
 	dataToShow := &ShowDataSchema{}
-	err := cdt.Ipk.ReadJsonTo(dataToShow)
+	err := cdt.Ib.ReadJsonTo(dataToShow)
 	if err != nil {
 		log.Fatalln(err)
 	}

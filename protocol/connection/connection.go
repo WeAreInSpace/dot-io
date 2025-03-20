@@ -4,9 +4,9 @@ import (
 	"net"
 	"sync"
 
-	"github.com/WeAreInSpace/dot-io/packet"
-	"github.com/WeAreInSpace/dot-io/packet/in"
-	"github.com/WeAreInSpace/dot-io/packet/out"
+	"github.com/WeAreInSpace/dot-io/data"
+	"github.com/WeAreInSpace/dot-io/data/in"
+	"github.com/WeAreInSpace/dot-io/data/out"
 )
 
 func NewConnectionManager() (*ConnectionManager, error) {
@@ -28,19 +28,19 @@ type ConnectionData struct {
 
 	Conn *net.TCPConn
 
-	Ipk *in.InPacket
-	Opk *out.OutPacket
+	Ib in.Reader
+	Ob out.Writer
 }
 
 func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc func(cdt *ConnectionData)) error {
-	opk := out.NewOutPacket(conn)
-	ipk := in.NewInPacket(conn)
+	ob := out.NewOutbound(conn)
+	ib := in.NewInbound(conn)
 
 	clientConnectionHeader := &ClientConnectionHeader{}
 	clientConnectionStatus := &Status{}
-	err := packet.TryAndRuturnThis(
-		ipk.ReadJsonTo(clientConnectionHeader),
-		ipk.ReadJsonTo(clientConnectionStatus),
+	err := data.TryAndRuturnThis(
+		ib.ReadJsonTo(clientConnectionHeader),
+		ib.ReadJsonTo(clientConnectionStatus),
 	)
 	if err != nil {
 		return err
@@ -48,9 +48,9 @@ func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc fun
 
 	serverConnectionHeader := &ServerConnectionHeader{}
 	serverConnectionStatus := &Status{}
-	err = packet.TryAndRuturnThis(
-		opk.WriteJson(serverConnectionHeader),
-		opk.WriteJson(serverConnectionStatus),
+	err = data.TryAndRuturnThis(
+		ob.WriteJson(serverConnectionHeader),
+		ob.WriteJson(serverConnectionStatus),
 	)
 	if err != nil {
 		return err
@@ -60,8 +60,8 @@ func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc fun
 		Authentication: clientConnectionHeader.Authentication,
 		Conn:           conn,
 
-		Ipk: ipk,
-		Opk: opk,
+		Ib: ib,
+		Ob: ob,
 	}
 
 	go handleFunc(connData)
