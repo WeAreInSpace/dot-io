@@ -55,7 +55,7 @@ func validateServerConfig(conf *ServerConfig) error {
 	}
 
 	if conf.TcpListener == nil {
-		addr, err := net.ResolveTCPAddr("tcp", ":8000")
+		addr, err := net.ResolveTCPAddr("tcp", conf.Address)
 		if err != nil {
 			return err
 		}
@@ -185,7 +185,7 @@ func validateClientConfig(conf *ClientConfig) error {
 	}
 
 	if conf.TcpConn == nil {
-		addr, err := net.ResolveTCPAddr("tcp", ":8000")
+		addr, err := net.ResolveTCPAddr("tcp", conf.Address)
 		if err != nil {
 			return err
 		}
