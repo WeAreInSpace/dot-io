@@ -114,77 +114,85 @@ func validateFeildkitParams(action string, feildType string, feildName string, f
 	return feildData
 }
 
+const (
+	T_Int32    = "integer-32bit"
+	T_Int64    = "integer-64bit"
+	T_Str      = "string"
+	T_Json_Str = "json-string"
+	T_ByteArr  = "byte-array"
+)
+
 //Write
 
 func (f *FeildkitGroup) WriteInt32(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("write", "integer-32bit", feildName, feildDesc)
+	feildData := validateFeildkitParams("write", T_Int32, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) WriteInt64(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("write", "integer-64bit", feildName, feildDesc)
+	feildData := validateFeildkitParams("write", T_Int64, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) WriteString(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("write", "string", feildName, feildDesc)
+	feildData := validateFeildkitParams("write", T_Str, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) WriteStreamString(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("write", "string", feildName, feildDesc)
+	feildData := validateFeildkitParams("write", T_Str, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) WriteJson(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("write", "json-string", feildName, feildDesc)
+	feildData := validateFeildkitParams("write", T_Json_Str, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) WriteBytes(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("write", "byte-array", feildName, feildDesc)
+	feildData := validateFeildkitParams("write", T_ByteArr, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) WriteStreamBytes(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("write", "byte-array", feildName, feildDesc)
+	feildData := validateFeildkitParams("write", T_ByteArr, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 //Read
 
 func (f *FeildkitGroup) ReadInt32(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("read", "integer-32bit", feildName, feildDesc)
+	feildData := validateFeildkitParams("read", T_Int32, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) ReadInt64(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("read", "integer-64bit", feildName, feildDesc)
+	feildData := validateFeildkitParams("read", T_Int64, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) ReadString(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("read", "string", feildName, feildDesc)
+	feildData := validateFeildkitParams("read", T_Str, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) ReadStreamString(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("read", "string", feildName, feildDesc)
+	feildData := validateFeildkitParams("read", T_Str, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) ReadJson(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("read", "json-string", feildName, feildDesc)
+	feildData := validateFeildkitParams("read", T_Json_Str, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) ReadBytes(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("read", "byte-array", feildName, feildDesc)
+	feildData := validateFeildkitParams("read", T_ByteArr, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 
 func (f *FeildkitGroup) ReadStreamBytes(feildName string, feildDesc ...string) {
-	feildData := validateFeildkitParams("read", "byte-array", feildName, feildDesc)
+	feildData := validateFeildkitParams("read", T_ByteArr, feildName, feildDesc)
 	f.feildModel.Add(feildData)
 }
 

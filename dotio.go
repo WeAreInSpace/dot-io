@@ -18,6 +18,10 @@ import (
  Server Side
 */
 
+var (
+	Conf_CbOnNetErr func() = nil
+)
+
 type ServerConfig struct {
 	Address string
 	Network string
