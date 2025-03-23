@@ -14,7 +14,11 @@ import (
 func main() {
 	wg := new(sync.WaitGroup)
 
-	l, err := dotio.NewListener(nil)
+	l, err := dotio.NewListener(
+		&dotio.ServerConfig{
+			Address: ":35002",
+		},
+	)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -60,11 +64,13 @@ func server(l *dotio.Listener, wg *sync.WaitGroup) {
 				case "show":
 					{
 						show(cdt)
-						continue
 					}
 				case "sayHello":
 					{
 						cdt.Ob.WriteString("Hello World")
+					}
+				case "close":
+					{
 						continue
 					}
 				}
@@ -87,5 +93,5 @@ func show(cdt *connection.ConnectionData) {
 		log.Fatalln(err)
 	}
 
-	fmt.Printf("%s %s", cdt.Conn.RemoteAddr().String(), dataToShow.Message)
+	fmt.Printf("%s %s\n", cdt.Conn.RemoteAddr().String(), dataToShow.Message)
 }
