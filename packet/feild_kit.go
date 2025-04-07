@@ -1,4 +1,4 @@
-package data
+package packet
 
 import (
 	"github.com/WeAreInSpace/mlish"

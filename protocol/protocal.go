@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/WeAreInSpace/dot-io/data"
+	"github.com/WeAreInSpace/dot-io/packet"
 )
 
 const VERSION = 1
@@ -12,7 +12,7 @@ const VERSION = 1
 type ProtocolData struct {
 	ProtocolVersion int
 	KeepAlivePeriod int64
-	FeildGroup      *data.FieldkitManager
+	FeildGroup      *packet.FieldkitManager
 }
 
 func (p *ProtocolData) Export(w io.Writer) {
@@ -27,7 +27,7 @@ func (p *ProtocolData) Export(w io.Writer) {
 }
 
 type ProtocolSchema struct {
-	ProtocolVersion int                     `json:"version"`
-	KeepAlivePeriod int64                   `json:"keepalive-period"`
-	FeildGroup      []data.FeildGroupSchema `json:"feild-groups"`
+	ProtocolVersion int                       `json:"version"`
+	KeepAlivePeriod int64                     `json:"keepalive-period"`
+	FeildGroup      []packet.FeildGroupSchema `json:"feild-groups"`
 }

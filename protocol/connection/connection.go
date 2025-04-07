@@ -4,9 +4,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/WeAreInSpace/dot-io/data"
-	"github.com/WeAreInSpace/dot-io/data/in"
-	"github.com/WeAreInSpace/dot-io/data/out"
+	"github.com/WeAreInSpace/dot-io/packet"
 )
 
 func NewConnectionManager() (*ConnectionManager, error) {
@@ -28,17 +26,17 @@ type ConnectionData struct {
 
 	Conn *net.TCPConn
 
-	Ib in.Reader
-	Ob out.Writer
+	Ib packet.Reader
+	Ob packet.Writer
 }
 
 func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc func(cdt *ConnectionData)) error {
-	ob := out.NewOutbound(conn)
-	ib := in.NewInbound(conn)
+	ob := packet.NewOutbound(conn)
+	ib := packet.NewInbound(conn)
 
 	clientConnectionHeader := &ClientConnectionHeader{}
 	clientConnectionStatus := &Status{}
-	err := data.TryAndRuturnThis(
+	err := packet.TryAndRuturnThis(
 		ib.ReadJsonTo(clientConnectionHeader),
 		ib.ReadJsonTo(clientConnectionStatus),
 	)
@@ -48,7 +46,7 @@ func (mgr *ConnectionManager) HandleConnection(conn *net.TCPConn, handleFunc fun
 
 	serverConnectionHeader := &ServerConnectionHeader{}
 	serverConnectionStatus := &Status{}
-	err = data.TryAndRuturnThis(
+	err = packet.TryAndRuturnThis(
 		ob.WriteJson(serverConnectionHeader),
 		ob.WriteJson(serverConnectionStatus),
 	)

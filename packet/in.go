@@ -1,4 +1,4 @@
-package in
+package packet
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ Convert binary to int32
 	buffer.WriteByte(byte(255))
 	ToInt32(buffer)
 */
-func ToInt32(data io.Reader) (number int32, err error) {
+func binaryToInt32(data io.Reader) (number int32, err error) {
 	err = binary.Read(data, binary.BigEndian, &number)
 	if err != nil {
 		return 0, err
@@ -34,7 +34,7 @@ Convert binary to int64
 	buffer.WriteByte(byte(255))
 	ToInt64(buffer)
 */
-func ToInt64(data io.Reader) (number int64, err error) {
+func binaryToInt64(data io.Reader) (number int64, err error) {
 	err = binary.Read(data, binary.BigEndian, &number)
 	if err != nil {
 		return 0, err
@@ -131,7 +131,7 @@ func (ib *Inbound) ReadInt32() (int32, error) {
 		return 0, err
 	}
 
-	number, err := ToInt32(rawData)
+	number, err := binaryToInt32(rawData)
 	if err != nil {
 		return 0, err
 	}
@@ -178,7 +178,7 @@ func (ib *Inbound) ReadInt64() (int64, error) {
 		return 0, err
 	}
 
-	number, err := ToInt64(rawData)
+	number, err := binaryToInt64(rawData)
 	if err != nil {
 		return 0, err
 	}

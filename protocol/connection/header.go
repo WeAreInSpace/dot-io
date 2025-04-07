@@ -33,6 +33,7 @@ type ClientAuthentication struct {
 */
 
 type ServerConnectionHeader struct {
+	ParallelSteamEnable bool `json:"parallel_steam"`
 }
 
 type Status struct {

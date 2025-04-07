@@ -1,4 +1,4 @@
-package out
+package packet
 
 import (
 	"bytes"
@@ -7,13 +7,13 @@ import (
 	"io"
 )
 
-func ToInt32(number int32) *bytes.Buffer {
+func rawToInt32(number int32) *bytes.Buffer {
 	binaryBuffer := new(bytes.Buffer)
 	binary.Write(binaryBuffer, binary.BigEndian, number)
 	return binaryBuffer
 }
 
-func ToInt64(number int64) *bytes.Buffer {
+func rawToInt64(number int64) *bytes.Buffer {
 	binaryBuffer := new(bytes.Buffer)
 	binary.Write(binaryBuffer, binary.BigEndian, number)
 	return binaryBuffer
@@ -58,7 +58,7 @@ func (ob *Outbound) writeStream(data io.Reader) error {
 }
 
 func (ob *Outbound) WriteInt32(data int32) error {
-	err := ob.writeStream(ToInt32(data))
+	err := ob.writeStream(rawToInt32(data))
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (ob *Outbound) WriteInt32(data int32) error {
 }
 
 func (ob *Outbound) WriteInt64(data int64) error {
-	err := ob.writeStream(ToInt64(data))
+	err := ob.writeStream(rawToInt64(data))
 	if err != nil {
 		return err
 	}

@@ -1,15 +1,12 @@
 package dotio
 
 import (
-	"io"
 	"log"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/WeAreInSpace/dot-io/data"
-	"github.com/WeAreInSpace/dot-io/data/in"
-	"github.com/WeAreInSpace/dot-io/data/out"
+	"github.com/WeAreInSpace/dot-io/packet"
 	"github.com/WeAreInSpace/dot-io/protocol"
 	"github.com/WeAreInSpace/dot-io/protocol/connection"
 )
@@ -79,7 +76,7 @@ type Listener struct {
 
 	TcpListener  *net.TCPListener
 	Connection   *connection.ConnectionManager
-	Feildkit     *data.FieldkitManager
+	Feildkit     *packet.FieldkitManager
 	ProtocolData *protocol.ProtocolData
 }
 
@@ -97,7 +94,7 @@ func NewListener(conf *ServerConfig) (*Listener, error) {
 		return nil, err
 	}
 
-	feildkitManager := data.NewFieldkitManager()
+	feildkitManager := packet.NewFieldkitManager()
 
 	protocolData := &protocol.ProtocolData{
 		ProtocolVersion: protocol.VERSION,
@@ -159,7 +156,7 @@ type ClientConfig struct {
 
 	KeepAlivePeriod int64
 
-	Feildkit *data.FieldkitManager
+	Feildkit *packet.FieldkitManager
 
 	TcpConn *net.TCPConn
 }
@@ -202,7 +199,7 @@ func validateClientConfig(conf *ClientConfig) error {
 	}
 
 	if conf.Feildkit == nil {
-		conf.Feildkit = data.NewFieldkitManager()
+		conf.Feildkit = packet.NewFieldkitManager()
 	}
 
 	return nil
@@ -213,7 +210,7 @@ type Connection struct {
 	Mx *sync.RWMutex
 
 	TcpConn  *net.TCPConn
-	Feildkit *data.FieldkitManager
+	Feildkit *packet.FieldkitManager
 
 	*ConnectionIO
 
@@ -229,11 +226,11 @@ func NewConnection(conf *ClientConfig, clientConnectionHeader connection.ClientC
 		return nil, err
 	}
 
-	ib := in.NewInbound(conf.TcpConn)
-	ob := out.NewOutbound(conf.TcpConn)
+	ib := packet.NewInbound(conf.TcpConn)
+	ob := packet.NewOutbound(conf.TcpConn)
 
 	clientConnectionStatus := &connection.Status{}
-	err = data.TryAndRuturnThis(
+	err = packet.TryAndRuturnThis(
 		ob.WriteJson(clientConnectionHeader),
 		ob.WriteJson(clientConnectionStatus),
 	)
@@ -243,7 +240,7 @@ func NewConnection(conf *ClientConfig, clientConnectionHeader connection.ClientC
 
 	serverConnectionHeader := &connection.ServerConnectionHeader{}
 	serverConnectionStatus := &connection.Status{}
-	err = data.TryAndRuturnThis(
+	err = packet.TryAndRuturnThis(
 		ib.ReadJsonTo(serverConnectionHeader),
 		ib.ReadJsonTo(serverConnectionStatus),
 	)
@@ -269,8 +266,8 @@ func NewConnection(conf *ClientConfig, clientConnectionHeader connection.ClientC
 }
 
 type ConnectionIO struct {
-	Ib in.Reader
-	Ob out.Writer
+	Ib packet.Reader
+	Ob packet.Writer
 }
 
 func (c *Connection) Call(cb func(cd *ConnectionIO)) {
@@ -279,24 +276,4 @@ func (c *Connection) Call(cb func(cd *ConnectionIO)) {
 
 func (c *Connection) Close() {
 	c.TcpConn.Close()
-}
-
-/*
- Local
-*/
-
-type LocalIO struct {
-	Ib in.Reader
-	Ob out.Writer
-}
-
-func NewLocal(lio io.ReadWriter) *LocalIO {
-	ib := in.NewInbound(lio.(io.Reader))
-	ob := out.NewOutbound(lio.(io.Writer))
-	localIO := &LocalIO{
-		Ib: ib,
-		Ob: ob,
-	}
-
-	return localIO
 }
