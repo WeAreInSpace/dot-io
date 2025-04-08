@@ -59,7 +59,6 @@ type ReturnableReader interface {
 	ReadInt32() (int32, error)
 	ReadInt64() (int64, error)
 	ReadString() (string, error)
-	ReadStreamString() (io.ReadWriter, error)
 	ReadJson() (any, error)
 	ReadBytes() ([]byte, error)
 	ReadStreamBytes() (io.ReadWriter, error)
@@ -69,7 +68,6 @@ type ThrowableReader interface {
 	ReadInt32To(*int32) error
 	ReadInt64To(*int64) error
 	ReadStringTo(*string) error
-	ReadStreamStringTo(io.Writer) error
 	ReadJsonTo(any) error
 	ReadBytesTo([]byte) error
 	ReadStreamBytesTo(io.Writer) error
@@ -233,36 +231,8 @@ func (ib *Inbound) ReadStringTo(data *string) error {
 	return nil
 }
 
-func (ib *Inbound) ReadStreamString() (io.ReadWriter, error) {
-	length, err := ib.ReadInt64()
-	if err != nil {
-		return nil, err
-	}
-
-	rawData, err := ib.readStream(length)
-	if err != nil {
-		return nil, err
-	}
-
-	return rawData, nil
-}
-
-func (ib *Inbound) ReadStreamStringTo(buffer io.Writer) error {
-	length, err := ib.ReadInt64()
-	if err != nil {
-		return err
-	}
-
-	err = ib.readStreamTo(length, buffer)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (ib *Inbound) ReadJson() (val any, err error) {
-	jsonString, err := ib.ReadStreamString()
+	jsonString, err := ib.ReadStreamBytes()
 	if err != nil {
 		return
 	}
@@ -274,7 +244,7 @@ func (ib *Inbound) ReadJson() (val any, err error) {
 }
 
 func (ib *Inbound) ReadJsonTo(val any) error {
-	jsonString, err := ib.ReadStreamString()
+	jsonString, err := ib.ReadStreamBytes()
 	if err != nil {
 		return err
 	}

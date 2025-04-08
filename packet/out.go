@@ -29,7 +29,6 @@ type Writer interface {
 	WriteInt32(int32) error
 	WriteInt64(int64) error
 	WriteString(string) error
-	WriteStreamString(int64, io.Reader) error
 	WriteJson(any) error
 	WriteBytes([]byte) error
 	WriteStreamBytes(int64, io.Reader) error
@@ -91,27 +90,13 @@ func (ob *Outbound) WriteString(data string) error {
 	return nil
 }
 
-func (ob *Outbound) WriteStreamString(len int64, data io.Reader) error {
-	err := ob.WriteInt64(len)
-	if err != nil {
-		return err
-	}
-
-	err = ob.writeStream(data)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (ob *Outbound) WriteJson(data any) error {
 	jsonBuffer := new(bytes.Buffer)
 	jsonEncoder := json.NewEncoder(jsonBuffer)
 
 	jsonEncoder.Encode(data)
 
-	err := ob.WriteStreamString(int64(jsonBuffer.Len()), jsonBuffer)
+	err := ob.WriteStreamBytes(int64(jsonBuffer.Len()), jsonBuffer)
 	if err != nil {
 		return err
 	}
