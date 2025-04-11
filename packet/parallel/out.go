@@ -1,71 +1,98 @@
 package parallel
 
 import (
-	"errors"
+	"bytes"
+	"encoding/binary"
 	"io"
-	"math"
 	"sync"
 )
 
+func rawToUint8(number uint8) *bytes.Buffer {
+	binaryBuffer := new(bytes.Buffer)
+	binary.Write(binaryBuffer, binary.BigEndian, number)
+	return binaryBuffer
+}
+
+func rawToInt64(number int64) *bytes.Buffer {
+	binaryBuffer := new(bytes.Buffer)
+	binary.Write(binaryBuffer, binary.BigEndian, number)
+	return binaryBuffer
+}
+
 func NewParallelOut(w io.Writer) *ParallelOut {
-	pipes := []*writePipe{}
 	errChan := make(chan error)
 
 	return &ParallelOut{
-		pipes: pipes,
-
 		errChan: errChan,
-
-		W: w,
+		W:       w,
 	}
 }
 
 type ParallelOut struct {
-	pipes []*writePipe
+	wg sync.WaitGroup
+	mx sync.Mutex
 
-	wg      sync.WaitGroup
-	errChan chan error
+	errChan    chan error
+	feildCount uint8
 
 	W io.Writer
 }
 
-func (p *ParallelOut) write(r io.Reader) error {
-	pipeNumber := len(p.pipes)
-	if pipeNumber > math.MaxUint8 {
-		return errors.New("there are too many pipes")
+func (po *ParallelOut) write(r io.Reader) {
+	buffer := []byte{}
+	for {
+		buff := make([]byte, 1)
+		_, err := r.Read(buff)
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				po.errChan <- err
+				break
+			}
+		}
+		buffer = append(buffer, buff...)
 	}
-	if pipeNumber < 0 {
-		return errors.New("there is no pipe")
+
+	for dataPosition, buff := range buffer {
+		po.wg.Add(1)
+
+		go func() {
+			defer po.wg.Done()
+
+			po.mx.Lock()
+			fakeByteArr := []byte{buff}
+			_, err := io.Copy(po.W, rawToUint8(po.feildCount))
+			if err != nil {
+				po.errChan <- err
+				po.mx.Unlock()
+				return
+			}
+
+			_, err = io.Copy(po.W, rawToInt64(int64(dataPosition)))
+			if err != nil {
+				po.errChan <- err
+				po.mx.Unlock()
+				return
+			}
+
+			_, err = po.W.Write(fakeByteArr)
+			if err != nil {
+				po.errChan <- err
+				po.mx.Unlock()
+				return
+			}
+			po.mx.Unlock()
+		}()
 	}
-
-	pipe := NewWritePipe(
-		&Pipe{
-			Wg:         &p.wg,
-			ErrChan:    p.errChan,
-			PipeNumber: uint8(pipeNumber),
-		},
-		r,
-		p.W,
-	)
-
-	p.pipes = append(p.pipes, pipe)
-
-	return nil
 }
 
-func (p *ParallelOut) WriteBytes(r io.Reader) error {
-	err := p.write(r)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (po *ParallelOut) WriteBytes(r io.Reader) {
+	po.write(r)
+	po.feildCount++
 }
 
 func (p *ParallelOut) Wait() error {
-	for _, pipe := range p.pipes {
-		pipe.write()
-	}
 	p.wg.Wait()
 	close(p.errChan)
 

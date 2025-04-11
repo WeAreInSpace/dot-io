@@ -8,15 +8,6 @@ import (
 	"io"
 )
 
-/*
-Convert binary to int32
-
-# Example
-
-	buffer := new(bytes.Buffer)
-	buffer.WriteByte(byte(255))
-	ToInt32(buffer)
-*/
 func binaryToInt32(data io.Reader) (number int32, err error) {
 	err = binary.Read(data, binary.BigEndian, &number)
 	if err != nil {
@@ -25,15 +16,6 @@ func binaryToInt32(data io.Reader) (number int32, err error) {
 	return
 }
 
-/*
-Convert binary to int64
-
-# Example
-
-	buffer := new(bytes.Buffer)
-	buffer.WriteByte(byte(255))
-	ToInt64(buffer)
-*/
 func binaryToInt64(data io.Reader) (number int64, err error) {
 	err = binary.Read(data, binary.BigEndian, &number)
 	if err != nil {
