@@ -39,16 +39,8 @@ func validateServerConfig(conf *ServerConfig) error {
 		conf.Network = "tcp"
 	}
 
-	if conf.Wg == nil {
-		conf.Wg = new(sync.WaitGroup)
-	}
-
-	if conf.Mx == nil {
-		conf.Mx = new(sync.RWMutex)
-	}
-
 	if conf.KeepAlivePeriod <= 0 {
-		conf.KeepAlivePeriod = 10
+		conf.KeepAlivePeriod = protocol.DEFAULT_KEEP_ALIVE
 	}
 
 	if conf.TcpListener == nil {
@@ -74,10 +66,7 @@ type Listener struct {
 
 	KeepAlivePeriod int64
 
-	TcpListener  *net.TCPListener
-	Connection   *connection.ConnectionManager
-	Feildkit     *packet.FieldkitManager
-	ProtocolData *protocol.ProtocolData
+	TcpListener *net.TCPListener
 }
 
 func NewListener(conf *ServerConfig) (*Listener, error) {
@@ -89,35 +78,64 @@ func NewListener(conf *ServerConfig) (*Listener, error) {
 		return nil, err
 	}
 
-	connectionMgr, err := connection.NewConnectionManager()
-	if err != nil {
-		return nil, err
-	}
-
-	feildkitManager := packet.NewFieldkitManager()
-
-	protocolData := &protocol.ProtocolData{
-		ProtocolVersion: protocol.VERSION,
-		KeepAlivePeriod: conf.KeepAlivePeriod,
-		FeildGroup:      feildkitManager,
-	}
-
 	listener := &Listener{
 		Wg: conf.Wg,
 		Mx: conf.Mx,
 
 		KeepAlivePeriod: conf.KeepAlivePeriod,
 
-		TcpListener:  conf.TcpListener,
-		Connection:   connectionMgr,
-		Feildkit:     feildkitManager,
-		ProtocolData: protocolData,
+		TcpListener: conf.TcpListener,
 	}
 
 	return listener, nil
 }
 
-func (l *Listener) OnConnection(cbOnConnect func(cdt *connection.ConnectionData)) {
+type Ctx struct {
+	Authentication connection.ClientAuthentication
+
+	Conn *net.TCPConn
+
+	Ib packet.Reader
+	Ob packet.Writer
+}
+
+func handleConnection(conn *net.TCPConn, handleFunc func(cdt *Ctx)) error {
+	ib := packet.NewInbound(conn)
+	ob := packet.NewOutbound(conn)
+	clientConnectionHeader := &connection.ClientConnectionHeader{}
+	clientConnectionStatus := &connection.Status{}
+	err := packet.TryAndRuturnThis(
+		ib.ReadJsonTo(clientConnectionHeader),
+		ib.ReadJsonTo(clientConnectionStatus),
+	)
+	if err != nil {
+		return err
+	}
+
+	serverConnectionHeader := &connection.ServerConnectionHeader{}
+	serverConnectionStatus := &connection.Status{}
+	err = packet.TryAndRuturnThis(
+		ob.WriteJson(serverConnectionHeader),
+		ob.WriteJson(serverConnectionStatus),
+	)
+	if err != nil {
+		return err
+	}
+
+	connData := &Ctx{
+		Authentication: clientConnectionHeader.Authentication,
+		Conn:           conn,
+
+		Ib: ib,
+		Ob: ob,
+	}
+
+	go handleFunc(connData)
+
+	return nil
+}
+
+func (l *Listener) OnConnection(cbOnConnect func(cdt *Ctx)) {
 	for {
 		conn, err := l.TcpListener.AcceptTCP()
 		if err != nil {
@@ -129,9 +147,9 @@ func (l *Listener) OnConnection(cbOnConnect func(cdt *connection.ConnectionData)
 		conn.SetKeepAlivePeriod(time.Second * time.Duration(l.KeepAlivePeriod))
 
 		go func() {
-			err := l.Connection.HandleConnection(
+			err := handleConnection(
 				conn,
-				func(cdt *connection.ConnectionData) {
+				func(cdt *Ctx) {
 					cbOnConnect(cdt)
 				},
 			)
@@ -155,8 +173,6 @@ type ClientConfig struct {
 	Mx *sync.RWMutex
 
 	KeepAlivePeriod int64
-
-	Feildkit *packet.FieldkitManager
 
 	TcpConn *net.TCPConn
 }
@@ -198,10 +214,6 @@ func validateClientConfig(conf *ClientConfig) error {
 		conf.TcpConn = conn
 	}
 
-	if conf.Feildkit == nil {
-		conf.Feildkit = packet.NewFieldkitManager()
-	}
-
 	return nil
 }
 
@@ -209,8 +221,7 @@ type Connection struct {
 	Wg *sync.WaitGroup
 	Mx *sync.RWMutex
 
-	TcpConn  *net.TCPConn
-	Feildkit *packet.FieldkitManager
+	TcpConn *net.TCPConn
 
 	*ConnectionIO
 
@@ -252,8 +263,7 @@ func NewConnection(conf *ClientConfig, clientConnectionHeader connection.ClientC
 		Wg: conf.Wg,
 		Mx: conf.Mx,
 
-		TcpConn:  conf.TcpConn,
-		Feildkit: conf.Feildkit,
+		TcpConn: conf.TcpConn,
 
 		ConnectionIO: &ConnectionIO{
 			Ib: ib,

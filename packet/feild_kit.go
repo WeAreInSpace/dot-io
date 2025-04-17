@@ -17,7 +17,7 @@ type FeildkitData struct {
 	Action       string //write, read
 }
 
-func NewFieldkitManager() *FieldkitManager {
+func NewFieldkit() *FieldkitManager {
 	fields := mlish.NewModel[FeildkitGroupData]()
 	return &FieldkitManager{
 		Feilds: fields,

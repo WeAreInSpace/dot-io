@@ -8,7 +8,8 @@ import (
 	"sync"
 
 	dotio "github.com/WeAreInSpace/dot-io"
-	"github.com/WeAreInSpace/dot-io/protocol/connection"
+	"github.com/WeAreInSpace/dot-io/packet"
+	"github.com/WeAreInSpace/dot-io/protocol"
 )
 
 func main() {
@@ -23,13 +24,15 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	f := l.Feildkit.New("Command")
+	feildkit := packet.NewFieldkit()
+
+	f := feildkit.New("Command")
 	f.ReadString("cmd")
 
-	f = l.Feildkit.New("Show", `[ if (Command.cmd = "show") ]`)
+	f = feildkit.New("Show", `[ if (Command.cmd = "show") ]`)
 	f.ReadJson("msg", "Message data to show")
 
-	f = l.Feildkit.New("Say Hello", `[ if (Command.cmd = "sayHello") ]`)
+	f = feildkit.New("Say Hello", `[ if (Command.cmd = "sayHello") ]`)
 	f.WriteString("msg", "Hello World")
 
 	file, err := os.OpenFile("protocol_data/server.json", os.O_CREATE|os.O_WRONLY, 0777)
@@ -37,7 +40,12 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	l.ProtocolData.Export(file)
+	protocolData := protocol.ProtocolData{
+		ProtocolVersion: protocol.VERSION,
+		KeepAlivePeriod: protocol.DEFAULT_KEEP_ALIVE,
+		Feildkit:        feildkit,
+	}
+	protocolData.Export(file)
 
 	wg.Add(1)
 	go server(l, wg)
@@ -47,27 +55,27 @@ func main() {
 
 func server(l *dotio.Listener, wg *sync.WaitGroup) {
 	l.OnConnection(
-		func(cdt *connection.ConnectionData) {
+		func(ctx *dotio.Ctx) {
 			for {
-				cmd, err := cdt.Ib.ReadString()
+				cmd, err := ctx.Ib.ReadString()
 				if err, ok := err.(net.Error); ok && err != nil {
 					log.Println("Net error: ", err)
-					cdt.Conn.Close()
+					ctx.Conn.Close()
 					break
 				} else if err != nil {
 					log.Println("Error: ", err)
-					cdt.Conn.Close()
+					ctx.Conn.Close()
 					break
 				}
 
 				switch cmd {
 				case "show":
 					{
-						show(cdt)
+						show(ctx)
 					}
 				case "sayHello":
 					{
-						cdt.Ob.WriteString("Hello World")
+						ctx.Ob.WriteString("Hello World")
 					}
 				case "close":
 					{
@@ -75,7 +83,7 @@ func server(l *dotio.Listener, wg *sync.WaitGroup) {
 					}
 				}
 			}
-			cdt.Conn.Close()
+			ctx.Conn.Close()
 		},
 	)
 
@@ -86,12 +94,12 @@ type ShowDataSchema struct {
 	Message string
 }
 
-func show(cdt *connection.ConnectionData) {
+func show(ctx *dotio.Ctx) {
 	dataToShow := &ShowDataSchema{}
-	err := cdt.Ib.ReadJsonTo(dataToShow)
+	err := ctx.Ib.ReadJsonTo(dataToShow)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	fmt.Printf("%s %s\n", cdt.Conn.RemoteAddr().String(), dataToShow.Message)
+	fmt.Printf("%s %s\n", ctx.Conn.RemoteAddr().String(), dataToShow.Message)
 }

@@ -8,18 +8,19 @@ import (
 )
 
 const VERSION = 1
+const DEFAULT_KEEP_ALIVE = 10
 
 type ProtocolData struct {
 	ProtocolVersion int
 	KeepAlivePeriod int64
-	FeildGroup      *packet.FieldkitManager
+	Feildkit        *packet.FieldkitManager
 }
 
 func (p *ProtocolData) Export(w io.Writer) {
 	protocol := ProtocolSchema{
 		ProtocolVersion: p.ProtocolVersion,
 		KeepAlivePeriod: p.KeepAlivePeriod,
-		FeildGroup:      p.FeildGroup.Export(),
+		FeildGroup:      p.Feildkit.Export(),
 	}
 
 	encoder := json.NewEncoder(w)
